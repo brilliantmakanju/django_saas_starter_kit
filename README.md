@@ -58,7 +58,7 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 ### **Social Media APIs**  
 - **requests_oauthlib**: Manage interactions with the Twitter API.  
 
-### **Payments**  
+### **Payments (Not Implemented yet)**  
 - **Stripe**: Simplifies subscription and payment handling.  
 
 ---
@@ -67,8 +67,8 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 
 1. **Clone the Repository**  
    ```bash
-   git clone https://github.com/your-repo/django-saas-starter-kit.git
-   cd django-saas-starter-kit
+   git clone https://github.com/brilliantmakanju/django_saas_starter_kit.git
+   cd django_saas_starter_kit
    ```
 
 2. **Set Up Environment Variables**  
