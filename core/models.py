@@ -148,8 +148,9 @@ class SocialMediaAccount(models.Model):
     organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE, related_name="social_media_accounts")
     user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)  # The user who connected the account
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
-    access_token = models.CharField(max_length=255)
+    access_token = models.CharField(max_length=512)
     access_token_secret = models.CharField(max_length=255, null=True, blank=True)  # For Twitter only
+    access_id_secret = models.CharField(max_length=255, null=True, blank=True)  # For LinkedIn only
     connected_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

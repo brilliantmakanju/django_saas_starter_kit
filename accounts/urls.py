@@ -8,7 +8,7 @@ from .views import (
     get_jwt_from_oauth,
     stripe_webhook,
     ProtectedRouteView,
-    SocialCallBack
+    SocialCallBack, LinkedInSocialCallBack
 )
 
 urlpatterns = [
@@ -18,6 +18,7 @@ urlpatterns = [
     path('refresh/', RefreshTokenView.as_view(), name="auth-refresh"),
     path('jwt-access/', get_jwt_from_oauth, name='auth-jwt-access'),
     path('twitter/callback/', SocialCallBack.as_view(), name='social-twitter-callback'),
+    path('linkedin/callback/', LinkedInSocialCallBack.as_view(), name='social-linkedin-callback'),
 
     # Subscription Endpoints
     path('subscriptions/create/', CreateSubscriptionAPIView.as_view(), name='subscriptions-create'),

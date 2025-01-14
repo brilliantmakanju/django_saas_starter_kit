@@ -41,6 +41,12 @@ TWITTER_AUTH_URL = os.getenv("TWITTER_AUTH_URL", "")
 TWITTER_TOKEN_URL = os.getenv("TWITTER_TOKEN_URL", "")
 TWITTER_REDIRECT_URI = os.getenv("TWITTER_REDIRECT_URI", "")
 
+LINKEDIN_CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID", "")
+LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET", "")
+LINKEDIN_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI", "")
+LINKEDIN_SCOPE = "openid profile w_member_social email"
+
+
 TWITTER_SCOPES = [
     "tweet.read",
     "users.read",
@@ -361,7 +367,7 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=50),
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=5),
 }
 

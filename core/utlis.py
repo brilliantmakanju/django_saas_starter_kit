@@ -363,12 +363,38 @@ def select_post_to_publish(posts_to_publish):
 
     return selected_post
 
+# Function to filter posts by platform and select based on priority
+def select_linkedin_post_to_publish(posts_to_publish):
+    # Step 1: Filter the posts by platform (e.g., 'LinkedIn')
+    linkedIn_posts = [post for post in posts_to_publish if post.platform == 'linkedin']
+
+    if not linkedIn_posts:
+        print("No posts available for LinkedIn.")
+        return None
+
+    # Step 2: Separate posts into priority and non-priority
+    priority_posts = [post for post in linkedIn_posts if post.priority]
+    non_priority_posts = [post for post in linkedIn_posts if not post.priority]
+
+    # Step 3: Select the post based on priority
+    if priority_posts:
+        # If there are priority posts, select the first one (you can also choose random here if needed)
+        selected_post = priority_posts[0]
+        print(f"Priority post selected: {selected_post.id}")
+    else:
+        # If no priority posts, select one randomly from non-priority posts
+        selected_post = random.choice(non_priority_posts)
+        print(f"Random post selected: {selected_post.id}")
+
+    return selected_post
+
+
 # Function to delete the posts that were not selected for publishing
-def delete_other_posts(selected_post):
+def delete_other_posts(selected_post, platform):
     # Filter out posts that are drafted or scheduled and not selected
     other_posts = Post.objects.filter(
-        platform='twitter',
-        status__in=['drafted', 'scheduled']
+        platform=platform,
+        status__in=['drafted']
     ).exclude(id=selected_post.id)
 
     # Delete the posts that are not selected for publishing

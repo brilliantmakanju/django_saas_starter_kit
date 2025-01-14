@@ -2,8 +2,11 @@ from requests_oauthlib import OAuth1Session
 from django.http import JsonResponse
 from core.models import SocialMediaAccount
 from django.conf import settings
-import time
+import requests
+from urllib.parse import urlencode
 
+
+# Twitter Function to post on user behalf
 def twitter_initiate_oauth(request):
     """
     Initiates the Twitter OAuth process and returns the authorization URL.
@@ -104,16 +107,162 @@ def post_tweet(tweet_text, organization):
         print(f"Tweet posted successfully. Response: {response.json()}")
         return JsonResponse({"message": "Tweet posted successfully!"})
 
-    if response.status_code == 429:
-        retry_after = 15 * 60  # Wait for 15 minutes (default)
-        print("Rate limit exceeded. Retrying after 15 minutes...")
-        time.sleep(retry_after)
+    # if response.status_code == 429:
+    #     retry_after = 15 * 60  # Wait for 15 minutes (default)
+    #     print("Rate limit exceeded. Retrying after 15 minutes...")
+    #     time.sleep(retry_after)
 
     else:
         print(f"Error posting tweet. Status code: {response.status_code}, Response: {response.json()}")
         return JsonResponse(
             {"error": response.json(), "status_code": response.status_code}, status=500
         )
+
+
+# LinkedIn API Credentials
+LINKEDIN_CLIENT_ID = settings.LINKEDIN_CLIENT_ID
+LINKEDIN_CLIENT_SECRET = settings.LINKEDIN_CLIENT_SECRET
+LINKEDIN_REDIRECT_URI = settings.LINKEDIN_REDIRECT_URI
+LINKEDIN_SCOPE = settings.LINKEDIN_SCOPE
+
+# LinkedIn Function to post on user behalf
+def linkedin_initiate_oauth(request):
+    """
+    Initiates the LinkedIn OAuth process and returns the authorization URL.
+    """
+    auth_url = f"https://www.linkedin.com/oauth/v2/authorization?{urlencode({
+        'response_type': 'code',
+        'client_id': LINKEDIN_CLIENT_ID,
+        'redirect_uri': LINKEDIN_REDIRECT_URI,
+        'scope': LINKEDIN_SCOPE
+    })}"
+    print(f"LinkedIn Authorization URL: {auth_url}")
+    return JsonResponse({"authorization_url": auth_url})
+
+def linkedin_callback_oauth(request, organization):
+    """
+    Handles the callback and exchanges the authorization code for access tokens.
+    """
+    authorization_code = request.GET.get("code")  # From frontend input
+    if not authorization_code:
+        return JsonResponse({"error": "Missing authorization code."}, status=400)
+
+    token_url = "https://www.linkedin.com/oauth/v2/accessToken"
+    payload = {
+        'grant_type': 'authorization_code',
+        'code': authorization_code,
+        'redirect_uri': LINKEDIN_REDIRECT_URI,
+        'client_id': LINKEDIN_CLIENT_ID,
+        'client_secret': LINKEDIN_CLIENT_SECRET,
+    }
+
+    try:
+        # Step 1: Exchange authorization code for access token
+        response = requests.post(token_url, data=payload)
+        if response.status_code == 200:
+            tokens = response.json()
+            access_token = tokens.get('access_token')
+
+            # Step 2: Fetch LinkedIn member ID (sub) using the access token
+            member_id_url = "https://api.linkedin.com/v2/userinfo"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "X-Restli-Protocol-Version": "2.0.0"
+            }
+
+            member_response = requests.get(member_id_url, headers=headers)
+            if member_response.status_code == 200:
+                member_id = member_response.json().get("sub")
+                print(f"LinkedIn member ID retrieved: {member_id}")
+
+                # Step 3: Save tokens and member ID in the database
+                SocialMediaAccount.objects.update_or_create(
+                    organization=organization,
+                    platform=SocialMediaAccount.LINKEDIN,
+                    defaults={
+                        'user': request.user,
+                        'access_token': access_token,
+                        'access_id_secret': member_id,  # Store member ID as 'access_id_secret' or another field
+                    }
+                )
+                print(f"LinkedIn access token and member ID saved for organization: {organization}")
+                return JsonResponse({"message": "LinkedIn account connected successfully!"})
+            else:
+                print(f"Error fetching LinkedIn member ID: {member_response.text}")
+                return JsonResponse({"error": "Unable to fetch LinkedIn member ID."}, status=500)
+        else:
+            print(f"Error fetching LinkedIn access token: {response.text}")
+            return JsonResponse({"error": response.json()}, status=response.status_code)
+    except Exception as e:
+        return JsonResponse({"error": "Error fetching access token or member ID", "details": str(e)}, status=500)
+
+def post_linkedin_update(post_content, organization):
+    """
+    Posts an update on LinkedIn using the stored access tokens.
+    """
+    print(f"Attempting to post on LinkedIn for organization: {organization}")
+
+    # Retrieve the associated LinkedIn account for the organization
+    linkedin_oauth = SocialMediaAccount.objects.filter(organization=organization).first()
+
+    if not linkedin_oauth:
+        print(f"No LinkedIn account connected for organization: {organization}")
+        return JsonResponse({"error": "LinkedIn account not connected."}, status=400)
+
+    print(f"Found LinkedIn account for organization: {organization}")
+    print(f"Access token: {linkedin_oauth.access_token}")
+
+    # Use stored member ID or fetch it again if missing
+    member_id = linkedin_oauth.access_id_secret
+
+    # Create the post data
+    post_data = {
+        "author": f"urn:li:person:{member_id}",
+        "lifecycleState": "PUBLISHED",
+        "specificContent": {
+            "com.linkedin.ugc.ShareContent": {
+                "shareCommentary": {"text": post_content},
+                "shareMediaCategory": "NONE"
+            }
+        },
+        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+    }
+
+    # Post the content to LinkedIn
+    post_url = "https://api.linkedin.com/v2/ugcPosts"
+    headers = {
+        "Authorization": f"Bearer {linkedin_oauth.access_token}",
+        "X-Restli-Protocol-Version": "2.0.0"
+    }
+    print(f"Posting content to LinkedIn: {post_content}")
+
+    try:
+        response = requests.post(post_url, json=post_data, headers=headers)
+        if response.status_code == 201:
+            print(f"LinkedIn post created successfully: {response.json()}")
+            return JsonResponse({"message": "Post created successfully on LinkedIn!"})
+        else:
+            print(f"Error posting on LinkedIn. Status code: {response.status_code}, Response: {response.text}")
+            return JsonResponse(
+                {"error": response.json(), "status_code": response.status_code}, status=response.status_code
+            )
+    except Exception as e:
+        return JsonResponse({"error": "Error posting on LinkedIn", "details": str(e)}, status=500)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

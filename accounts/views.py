@@ -31,7 +31,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
 import os
 from accounts.utlis.utlis import is_organization_owner
-from .social_service import twitter_initiate_oauth, twitter_callback_oauth
+from .social_service import (twitter_initiate_oauth,
+                             twitter_callback_oauth,
+                             linkedin_initiate_oauth,
+                             linkedin_callback_oauth)
 
 
 # Load environment variables
@@ -558,5 +561,47 @@ class SocialCallBack(APIView):
 
         # Call the callback function for Twitter OAuth
         return twitter_callback_oauth(request, organization)
+
+
+
+class LinkedInSocialCallBack(APIView):
+    # permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Initiates the LinkedIn OAuth process and returns the authorization URL.
+        The user should visit the URL to authorize the app to connect to their account.
+        """
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to link an account to the organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Call the function that starts the LinkedIn OAuth process
+        return linkedin_initiate_oauth(request)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles the callback and completes the LinkedIn OAuth process.
+        Retrieves the access tokens and connects the account to the organization.
+        """
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to link an account to the organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Call the callback function for LinkedIn OAuth
+        return linkedin_callback_oauth(request, organization)
 
 

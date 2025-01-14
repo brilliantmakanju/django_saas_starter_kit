@@ -1,11 +1,11 @@
 from django_tenants.utils import tenant_context
 from django.utils import timezone
 from core.models import Post
-from accounts.social_service import post_tweet
+from accounts.social_service import post_tweet, post_linkedin_update
 from notifications.utlis import create_and_notify
 from organizations.models import Organization
 from celery import shared_task
-from core.utlis import select_post_to_publish, delete_other_posts
+from core.utlis import select_post_to_publish, delete_other_posts, select_linkedin_post_to_publish
 
 @shared_task
 def publish_pending_post():
@@ -90,10 +90,24 @@ def publish_pending_post():
                         if post.is_ready_to_publish():
                             print(f"Post {post.id} is ready to be published.")
 
-                            # post_tweet(post.content[:280], organization=tenant)
-
                             # Select the post for Twitter using the defined function
                             selected_post = select_post_to_publish(posts_to_publish)
+                            selected_linkedin_post = select_linkedin_post_to_publish(posts_to_publish)
+
+                            if selected_linkedin_post:
+                                # Mark the selected post as published
+                                post_linkedin_update(selected_linkedin_post.content, organization=tenant)
+                                selected_linkedin_post.publish()
+
+                                # Post the tweet
+                                print(f"Post {selected_linkedin_post.id} has been published.")
+
+                                # Step 4: Delete all other posts that are not the selected one
+                                delete_other_posts(selected_linkedin_post, platform="linkedin")
+
+                                # Exit the loop after publishing the selected post (no need to continue processing)
+                                break
+
 
                             if selected_post:
                                 # Mark the selected post as published
@@ -104,7 +118,7 @@ def publish_pending_post():
                                 print(f"Post {selected_post.id} has been published.")
 
                                 # Step 4: Delete all other posts that are not the selected one
-                                delete_other_posts(selected_post)
+                                delete_other_posts(selected_post, platform="twitter")
 
                                 # Exit the loop after publishing the selected post (no need to continue processing)
                                 break
