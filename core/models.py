@@ -72,6 +72,9 @@ class Post(models.Model):
     is_deleted = models.BooleanField(default=False)  # To indicate if the post is deleted
     is_inactive = models.BooleanField(default=False)  # To indicate if the post is inactive
 
+    # Track if a post get edited
+    is_edited = models.BooleanField(default=False) # To indicate if the post has been edited
+
     # Priority Check to make sure we post the one set by the user if selected.
     priority = models.BooleanField(default=False) # To indicate which to post
 
