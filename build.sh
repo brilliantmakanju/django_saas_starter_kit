@@ -1,13 +1,15 @@
 echo "🚀 Starting Render Build Process..."
 
-# Install system dependencies
+# Create and activate the virtual environment
+python3.12 -m venv viper
+source viper/bin/activate
+
+# Install system dependencies (if any required like Graphviz)
 echo "🔧 Installing system dependencies..."
-apt-get update && apt-get install -y graphviz graphviz-dev
+# (skip this if Graphviz installation is problematic or switch to a Docker approach)
 
 # Install Python dependencies
 echo "📦 Installing dependencies..."
-python3.12 -m venv viper
-source viper/bin/activate
 python3.12 -m pip install --upgrade pip
 python3.12 -m pip install -r requirements.txt
 
@@ -19,5 +21,4 @@ python3.12 manage.py migrate --noinput
 echo "🎨 Collecting static files..."
 python3.12 manage.py collectstatic --noinput
 
-# Start the server
 echo "✅ Build process completed. Ready to deploy!"
