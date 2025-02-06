@@ -376,7 +376,62 @@ CSRF_COOKIE_SECURE = True
 #     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=5),
 # }
 
+### Testing SIMPLE_JWT config
+
+# SIMPLE_JWT = {
+#     # Specifies the prefix for the authentication header; "JWT" means you must send tokens like "JWT <token>".
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#
+#     # Defines how long the access token is valid before it expires. Here, it is set to 5 minutes.
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+#
+#     # Defines how long the refresh token is valid before it expires. Here, it is set to 5 day.
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=5),
+#
+#     # Specifies the classes that will be used to create the tokens. We are using the default AccessToken class.
+#     'AUTH_TOKEN_CLASSES': (
+#         'rest_framework_simplejwt.tokens.AccessToken',
+#     ),
+#
+#     # If set to True, refresh tokens will be blacklisted after use. This means once you use a refresh token to get a new access token, it cannot be reused.
+#     'BLACKLIST_AFTER_ROTATION': True,  # Enable blacklisting of refresh tokens after they are rotated
+#     'ROTATE_REFRESH_TOKENS': True,
+#
+#     # Settings for token blacklisting
+#     'TOKEN_BLACKLIST': {
+#         'TOKEN_TYPE': 'refresh',
+#         'USER_ID_FIELD': 'id',  # The field that represents the user ID in your User model
+#         'USER_ID_CLAIM': 'user_id',  # The claim to be used to find the user ID
+#     },
+#
+#     'UPDATE_LAST_LOGIN': True,
+#
+#     'ALGORITHM': 'HS256',
+#
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+#     'JWK_URL': None,
+#     'LEEWAY': 0,
+#
+#     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+#     'USER_ID_FIELD': 'id',
+#     'USER_ID_CLAIM': 'user_id',
+#     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+#
+#     'TOKEN_TYPE_CLAIM': 'token_type',
+#     'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+#
+#     'JTI_CLAIM': 'jti',
+#
+#     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+#     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=5),
+# }
+
 SIMPLE_JWT = {
+    # Authentication Header Prefix
+    "AUTH_HEADER_TYPES": ("Bearer",),
     # Authentication Header Prefix
     "AUTH_HEADER_TYPES": ("Bearer",),
 

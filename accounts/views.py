@@ -1,6 +1,7 @@
 import stripe
 import re
 from django.utils.timezone import now
+from django.utils.timezone import now
 from django.db import connection
 
 from django.utils import timezone
@@ -8,7 +9,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from sesame.utils import get_query_string
 from django.conf import settings
+from sesame.utils import get_query_string
+from django.conf import settings
 
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -44,6 +49,8 @@ from organizations.models import Organization, Domain, UserOrganizationRole
 import uuid
 from accounts.serializers import validate_domain, validate_name, generate_schema_name, get_base_domain
 from django.utils.text import slugify
+from accounts.utlis.utlis import send_email
+from sesame.utils import get_user as sesame_get_user
 
 # Load environment variables
 
@@ -339,6 +346,8 @@ class CreateSubscriptionAPIView(APIView):
 
 
 ### Authentication Views
+
+### Authentication Views
 @api_view(['POST'])
 def get_jwt_from_oauth(request):
     try:
@@ -538,6 +547,7 @@ class RefreshTokenView(APIView):
         )
 
 
+### Social callback to add tokens for posting
 ### Social callback to add tokens for posting
 class SocialCallBack(APIView):
     # permission_classes = [AllowAny]
@@ -762,6 +772,127 @@ class ConfirmMagicLinkView(APIView):
             "refresh": str(refresh),
             "access": str(refresh.access_token),
             "user": user_data
+        }, status=status.HTTP_200_OK)
+
+
+### Magic Link VIEW ( Send and Confirm Links )
+class SendMagicLinkView(APIView):
+    """
+    API view to send a magic link for login or signup.
+    """
+
+    def post(self, request):
+        email = request.data.get("email")
+
+        # Check if email is provided
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate the email format
+        if not self.is_valid_email_format(email):
+            return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # # Check if the email is from a disposable email provider
+        # if self.is_disposable_email(email):
+        #     return Response({"error": "Temporary email addresses are not allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Validate email and user existence
+            user = User.objects.get(email=email)
+            if not user.is_active:
+                return Response({"error": "This account is inactive. Please contact support."},
+                                status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            # Avoid exposing user existence
+            user = None
+
+        if user:
+            # If the user exists and is active, generate the magic link
+            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/callback/{get_query_string(user)}"
+            message = "Click the link to log in to your account."
+        else:
+            # If the user doesn't exist, create a new user and leave them inactive
+            user = User.objects.create(email=email, is_active=True)  # Or other signup logic
+            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/callback/{get_query_string(user)}"
+            message = "Click the link to sign up and create your account."
+
+        # Send the magic link email
+        email_result = send_email(
+            subject="Your Magic Link for Authenticating",
+            recipient_list=[email],
+            context={"magic_link": magic_link, "year": now().year, "message": message},
+            template="emails/magic_link_email.html",
+            plain_message="Click the link to Authenticate."
+        )
+
+        # Handle email sending failure
+        if not email_result.get("success"):
+            return Response(
+                {"error": "Failed to send the magic link.", "details": email_result.get("error")},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response({"message": "If this email is registered, a magic link will be sent."},
+                        status=status.HTTP_200_OK)
+
+
+    def is_valid_email_format(self, email):
+        """
+        Check if the email is in a valid format using regex.
+        """
+        try:
+            validate_email(email)
+        except ValidationError:
+            return False
+        return True
+
+class ConfirmMagicLinkView(APIView):
+    """
+    API view to confirm the magic link and authenticate the user.
+    """
+
+    def get(self, request):
+        # Retrieve the token from the query parameters
+        token = request.query_params.get("token")
+
+        # Validate the presence of the token
+        if not token:
+            return Response({"error": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Attempt to retrieve the user using the sesame token
+        try:
+            user = sesame_get_user(token)
+        except Exception as e:
+            return Response({"error": f"Invalid or expired link. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure the user is active
+        if not user or not user.is_active:
+            return Response({"error": "This account is inactive or invalid."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Blacklist all outstanding tokens for the user to force a fresh login (for security)
+        try:
+            outstanding_tokens = OutstandingToken.objects.filter(user=user)
+
+            for outstanding_token in outstanding_tokens:
+                # Add to BlacklistedToken model to invalidate the token
+                BlacklistedToken.objects.get_or_create(token=outstanding_token)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to blacklist tokens: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Generate a new JWT token pair (refresh and access)
+        refresh = RefreshToken.for_user(user)
+
+        # Optionally: Log the login event
+        user.last_login = now()
+        user.save(update_fields=["last_login"])
+
+        return Response({
+            "message": "Login successful.",
+            "refresh": str(refresh),
+            "access": str(refresh.access_token)
         }, status=status.HTTP_200_OK)
 
 
