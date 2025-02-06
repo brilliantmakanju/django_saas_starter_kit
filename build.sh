@@ -1,8 +1,3 @@
-#!/bin/bash
-
-# Exit on error
-set -e
-
 echo "🚀 Starting Render Build Process..."
 
 # Install dependencies
