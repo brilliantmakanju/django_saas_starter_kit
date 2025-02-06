@@ -1,15 +1,16 @@
-import os
 import stripe
 import re
+from django.utils.timezone import now
 from django.db import connection
-from oauthlib.oauth2 import BackendApplicationClient
 
-from .utlis.check_user import check_new_user
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from sesame.utils import get_query_string
+from django.conf import settings
 
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -17,6 +18,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+from organizations.models import UserOrganizationRole
 from .permissions import TenantAccessPermission
 from drf_social_oauth2.views import AccessToken
 
@@ -35,7 +38,12 @@ from .social_service import (twitter_initiate_oauth,
                              twitter_callback_oauth,
                              linkedin_initiate_oauth,
                              linkedin_callback_oauth)
-
+from accounts.utlis.utlis import send_email
+from sesame.utils import get_user as sesame_get_user
+from organizations.models import Organization, Domain, UserOrganizationRole
+import uuid
+from accounts.serializers import validate_domain, validate_name, generate_schema_name, get_base_domain
+from django.utils.text import slugify
 
 # Load environment variables
 
@@ -329,6 +337,8 @@ class CreateSubscriptionAPIView(APIView):
 #             print("Serializer errors:", serializer.errors)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+### Authentication Views
 @api_view(['POST'])
 def get_jwt_from_oauth(request):
     try:
@@ -352,31 +362,6 @@ def get_jwt_from_oauth(request):
         })
     except AccessToken.DoesNotExist:
         return Response({'error': 'Invalid OAuth2 token'}, status=status.HTTP_400_BAD_REQUEST)
-
-class ProtectedRouteView(APIView):
-    """
-    A protected route that requires a valid token to access.
-    """
-    permission_classes = [IsAuthenticated, TenantAccessPermission]
-    authentication_classes = [JWTAuthentication]
-
-    def get(self, request, *args, **kwargs):
-        check_new_user(request.user)
-        user = request.user  # Retrieve the authenticated user
-        aiPost = []
-        return Response(
-            {
-                "message": "You have accessed a protected route!",
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "aiPost": aiPost,
-                },
-            },
-            status=200,
-        )
 
 class LogoutView(APIView):
     """
@@ -425,47 +410,79 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request):
+    def put(self, request):
         """
-        Update the user's profile (first_name, last_name, profile image, bio).
+        Update the user's profile (first_name, last_name, profile image, bio) and create an organization if required.
         """
 
-        # Ensure the user is authenticated
         user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=True, context={'request': request})
 
-        # Serialize the data with the user instance and partial data (only fields provided)
-        serializer = UserProfileSerializer(user, data=request.data, partial=True)
-
-        # Validate data and ensure it is correct
         if serializer.is_valid():
-            # Check if any fields have been modified, and apply them
             updated_data = serializer.validated_data
+
+            # Handle full_name, first_name, last_name, and organization creation logic
+            full_name = updated_data.get('full_name', '').strip()
+
+            if full_name:
+                name_parts = full_name.split(" ", 1)
+                first_name = name_parts[0]
+                last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+                user.first_name = first_name
+                user.last_name = last_name
+                user.save(update_fields=["first_name", "last_name"])
+
+                if not UserOrganizationRole.objects.filter(user=user).exists():
+                    unique_identifier = str(uuid.uuid4())
+                    organization_name = f"{first_name[:3]}{unique_identifier[:4]}{last_name[-3:]}".lower()
+
+                    organization = Organization.objects.create(
+                        owner=user,
+                        name=organization_name,
+                        schema_name=organization_name
+                    )
+
+                    domain_slug = slugify(organization_name)
+                    base_domain = get_base_domain()
+                    full_domain = f"{domain_slug}.{base_domain}"
+
+                    Domain.objects.create(
+                        domain=full_domain,
+                        tenant=organization,
+                        is_primary=True
+                    )
+
+                    UserOrganizationRole.objects.create(
+                        user=user,
+                        organization=organization,
+                        role='owner'
+                    )
 
             # Check profile image URL
             profile = updated_data.get('profile')
             if profile:
-                # Ensure the profile URL is valid (additional checks are performed in serializer)
                 if not re.match(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+", profile):
                     return Response({"detail": "Invalid Cloudinary URL."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validate bio length (optional)
+            # Validate bio length
             bio = updated_data.get('bio')
             if bio and len(bio) > 500:
                 return Response({"detail": "Bio cannot exceed 500 characters."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Save the validated data to the user model
+            # Save other validated fields
             for field, value in updated_data.items():
-                setattr(user, field, value)
+                if field not in ["full_name", "first_name", "last_name"]:  # Already handled separately
+                    setattr(user, field, value)
 
             user.save()
 
-            # Return success response with updated data
+            # Return all requested fields in the response
             return Response({
                 'detail': 'Profile updated successfully.',
                 'user': UserProfileSerializer(user).data
             }, status=status.HTTP_200_OK)
 
-        # Return validation errors if serializer is not valid
         return Response({
             'detail': 'Invalid data.',
             'errors': serializer.errors
@@ -521,7 +538,7 @@ class RefreshTokenView(APIView):
         )
 
 
-
+### Social callback to add tokens for posting
 class SocialCallBack(APIView):
     # permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated, TenantAccessPermission]
@@ -562,10 +579,7 @@ class SocialCallBack(APIView):
         # Call the callback function for Twitter OAuth
         return twitter_callback_oauth(request, organization)
 
-
-
 class LinkedInSocialCallBack(APIView):
-    # permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated, TenantAccessPermission]
 
     def get(self, request, *args, **kwargs):
@@ -578,7 +592,7 @@ class LinkedInSocialCallBack(APIView):
         if not organization:
             return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Only the organization owner can add or update team members
+        # Only the organization owner can add or update linkedin status for connection
         if not is_organization_owner(request.user, organization):
             return Response({'message': 'You are not authorized to link an account to the organization.'},
                             status=status.HTTP_403_FORBIDDEN)
@@ -603,5 +617,151 @@ class LinkedInSocialCallBack(APIView):
 
         # Call the callback function for LinkedIn OAuth
         return linkedin_callback_oauth(request, organization)
+
+
+### Magic Link VIEW ( Send and Confirm Links )
+class SendMagicLinkView(APIView):
+    """
+    API view to send a magic link for login or signup.
+    """
+
+    def post(self, request):
+        email = request.data.get("email")
+
+        # Check if email is provided
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate the email format
+        if not self.is_valid_email_format(email):
+            return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # # Check if the email is from a disposable email provider
+        # if self.is_disposable_email(email):
+        #     return Response({"error": "Temporary email addresses are not allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Validate email and user existence
+            user = User.objects.get(email=email)
+            if not user.is_active:
+                return Response({"error": "This account is inactive. Please contact support."},
+                                status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            # Avoid exposing user existence
+            user = None
+
+        if user:
+            # If the user exists and is active, generate the magic link
+            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/{get_query_string(user)}"
+            message = "Click the link to log in to your account."
+        else:
+            # If the user doesn't exist, create a new user and leave them inactive
+            user = User.objects.create(email=email, is_active=True)  # Or other signup logic
+            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/{get_query_string(user)}"
+            message = "Click the link to sign up and create your account."
+
+        # Send the magic link email
+        email_result = send_email(
+            subject="Your Magic Link for Authenticating",
+            recipient_list=[email],
+            context={"magic_link": magic_link, "year": now().year, "message": message},
+            template="emails/magic_link_email.html",
+            plain_message="Click the link to Authenticate."
+        )
+
+        # Handle email sending failure
+        if not email_result.get("success"):
+            return Response(
+                {"error": "Failed to send the magic link.", "details": email_result.get("error")},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response({"message": "If this email is registered, a magic link will be sent."},
+                        status=status.HTTP_200_OK)
+
+
+    def is_valid_email_format(self, email):
+        """
+        Check if the email is in a valid format using regex.
+        """
+        try:
+            validate_email(email)
+        except ValidationError:
+            return False
+        return True
+
+class ConfirmMagicLinkView(APIView):
+    """
+    API view to confirm the magic link and authenticate the user.
+    """
+
+    def get(self, request):
+        # Retrieve the token from the query parameters
+        token = request.query_params.get("token")
+
+        # Validate the presence of the token
+        if not token:
+            return Response({"error": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Attempt to retrieve the user using the sesame token
+        try:
+            user = sesame_get_user(token)
+        except Exception as e:
+            return Response({"error": f"Invalid or expired link. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure the user is active
+        if not user or not user.is_active:
+            return Response({"error": "This account is inactive or invalid."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Blacklist all outstanding tokens for the user to force a fresh login (for security)
+        try:
+            outstanding_tokens = OutstandingToken.objects.filter(user=user)
+
+            for outstanding_token in outstanding_tokens:
+                # Add to BlacklistedToken model to invalidate the token
+                BlacklistedToken.objects.get_or_create(token=outstanding_token)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to blacklist tokens: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Generate a new JWT token pair (refresh and access)
+        refresh = RefreshToken.for_user(user)
+
+        # Optionally: Log the login event
+        user.last_login = now()
+        user.save(update_fields=["last_login"])
+
+        # Check if the user has no organization
+        organization = UserOrganizationRole.objects.filter(user=user).first()
+
+        # Determine if the user is a new user
+        if not organization or (not user.first_name and not user.last_name):
+            new_user = True
+        else:
+            new_user = False
+
+        # Collect user details to send in the response
+        user_data = {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'profile': user.profile if user.profile else None,
+            'bio': user.bio,
+            'email': user.email,
+            'preferences': user.preferences,
+            'stripe_subscription_id': user.stripe_subscription_id,
+            'github_connected': user.github_connected,
+            'google_connected': user.google_connected,
+            'new_user': new_user,
+            'type': 'magic'
+        }
+
+        return Response({
+            "message": "Login successful.",
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": user_data
+        }, status=status.HTTP_200_OK)
 
 

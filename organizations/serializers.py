@@ -39,7 +39,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ['name', 'description', 'domain']
+        fields = ['id', 'name', 'description', 'domain']
 
     def validate(self, attrs):
         # Validate organization name
@@ -90,3 +90,34 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
         return organization
 
+
+
+
+class UpdateOrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Organization
+        fields = ['name', 'description']  # Only these fields can be updated
+
+    def validate(self, attrs):
+        # Validate organization name
+        name = attrs.get('name', None)
+
+        if name:
+            # Check if organization name already exists and it's not the same as the current one
+            if Organization.objects.filter(name=name).exclude(id=attrs.get('id')).exists():
+                raise serializers.ValidationError("Name already exists")
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        # Only update the name and description, no domain or other fields
+        instance.name = validated_data.get('name', instance.name)
+        instance.description = validated_data.get('description', instance.description)
+
+        print(instance)
+
+        # Save the updated organization
+        instance.save()
+
+        return instance

@@ -39,8 +39,8 @@ class Organization(TenantMixin):
     shuffle_tones = models.BooleanField(default=False)
 
     # New fields for social media platform configuration
-    has_twitter = models.BooleanField(default=False, help_text="Enable Twitter integration for this organization.")
-    has_linkedin = models.BooleanField(default=False, help_text="Enable LinkedIn integration for this organization.")
+    has_twitter = models.BooleanField(default=False, help_text="Enable Twitter integration for the organization.")
+    has_linkedin = models.BooleanField(default=False, help_text="Enable LinkedIn integration for the organization.")
 
     def __str__(self):
         return self.name

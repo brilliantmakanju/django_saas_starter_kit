@@ -1,20 +1,53 @@
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
-from rest_framework import serializers
+from organizations.models import Organization, Domain
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from organizations.models import InviteCode, UserOrganizationRole
-from rest_framework.exceptions import ValidationError
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-import re, os, requests
+import re, os, requests, uuid
+from django.utils.text import slugify
 from dotenv import load_dotenv
+from rest_framework.exceptions import ValidationError
+from django.conf import settings
+
 
 # Load environment variables from .env file
 load_dotenv()
 
 
 User = get_user_model()
+
+def validate_domain(domain):
+    if not re.match(r'^[a-z0-9-]+$', domain):
+        raise ValidationError("Domain can only contain lowercase letters, numbers, and hyphens.")
+    if Domain.objects.filter(domain=domain).exists():
+        raise ValidationError("Domain name is already in use.")
+    return domain
+
+def validate_name(name):
+    if Organization.objects.filter(name=name).exists():
+        raise ValidationError("Name is already in use.")
+    return name
+
+def generate_schema_name(name):
+    """
+    Generates a unique schema name by slugifying the name and appending a UUID.
+    """
+    base_schema_name = slugify(name)
+    unique_schema_name = f"{base_schema_name}-{uuid.uuid4().hex[:8]}"  # Append a short UUID for uniqueness
+    return unique_schema_name
+
+def get_base_domain():
+    """
+    Dynamically determines the base domain depending on whether the app is in local or production environment.
+    """
+    if settings.DEBUG:  # If running in local (DEBUG=True)
+        return 'localhost'  # Or another local domain if preferred
+    else:
+        return os.getenv('HOST_DOMAIN', 'example.com')  # Use the environment variable for production domain
+
 
 
 class UserCreateSerializer(BaseUserCreateSerializer):
@@ -81,44 +114,45 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(required=False, allow_blank=True)
+
+    email = serializers.EmailField(read_only=True)
+    preferences = serializers.JSONField(read_only=True)
+    stripe_subscription_id = serializers.CharField(read_only=True)
+    github_connected = serializers.BooleanField(read_only=True)
+    google_connected = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'profile', 'bio']
+        fields = [
+            'full_name', 'first_name', 'last_name', 'profile', 'bio', 'email',
+            'preferences', 'stripe_subscription_id', 'github_connected', 'google_connected'
+        ]
+        read_only_fields = ['first_name', 'last_name']  # These will be set through `full_name`
 
-    def validate_profile(self, value):
+    def validate_full_name(self, value):
         """
-                Validate the profile image URL to ensure it belongs to Cloudinary and is accessible.
-                """
+        Splits full_name into first_name and last_name before saving.
+        """
+        value = value.strip()
         if value:
-            # Ensure the URL is a valid Cloudinary URL (basic structure check)
-            cloudinary_url_pattern = re.compile(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+")
-            if not cloudinary_url_pattern.match(value):
-                raise serializers.ValidationError("Invalid Cloudinary URL format.")
+            name_parts = value.split(" ", 1)
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ""
 
-            # Extract the Cloud name from the URL (the second part of the URL is the Cloud name)
-            cloud_name = value.split("/")[3]
-            expected_cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')  # Retrieve Cloud name from environment variables
-
-            # Ensure the Cloud name matches the one stored in your .env file
-            if cloud_name != expected_cloud_name:
-                raise serializers.ValidationError(
-                    f"Cloudinary image does not belong to the correct cloud. Expected {expected_cloud_name}.")
-
-            # Optionally, perform a lightweight check to ensure the image is accessible (using a HEAD request)
-            try:
-                response = requests.head(value, timeout=5)
-                if response.status_code != 200:
-                    raise serializers.ValidationError("Cloudinary image is not accessible.")
-            except requests.exceptions.RequestException:
-                raise serializers.ValidationError("Unable to verify the Cloudinary image URL.")
+            self.initial_data['first_name'] = first_name
+            self.initial_data['last_name'] = last_name
 
         return value
 
-    # Additional validation for the bio text (optional, for length or forbidden characters)
-    def validate_bio(self, value):
-        if value and len(value) > 500:
-            raise serializers.ValidationError("Bio cannot be longer than 500 characters.")
-        return value
+    def to_representation(self, instance):
+        """
+        Returns full_name dynamically from first_name and last_name.
+        """
+        representation = super().to_representation(instance)
+        representation['full_name'] = f"{instance.first_name} {instance.last_name}".strip()
+        return representation
+
 
 class UserLoginSerializer(serializers.ModelSerializer):
     """
@@ -146,10 +180,10 @@ class CreateSubscriptionSerializer(serializers.Serializer):
 
 
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     first_name = serializers.CharField( read_only=True)
     last_name = serializers.CharField(read_only=True)
+    email = serializers.CharField(read_only=True)
     profile = serializers.CharField(allow_blank=True, read_only=True)
     bio = serializers.CharField(allow_blank=True, read_only=True)
     preferences = serializers.JSONField(default=dict, read_only=True)
@@ -161,13 +195,50 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         user = self.user
         # Check if the user belongs to any organization
-        organization = user.organizations.first()
+        # organization = user.organizations.first()
+        organization = UserOrganizationRole.objects.filter(user=user).first()
 
-        # If the user does not belong to any organization, add `new_user = True` in the response
-        if not organization:
-            data['new_user'] = True
-        else:
+
+        # Determine if the user is a new user
+        new_user = not organization and (not user.first_name or not user.last_name)
+        data['new_user'] = new_user
+
+
+        # Create an organization if user has no organization but has first_name and last_name
+        if not organization and user.first_name and user.last_name:
+            # Generate a unique organization name using first_name, last_name, and a UUID
+            unique_identifier = str(uuid.uuid4())  # Generate a UUID
+            organization_name = f"{user.first_name[:3]}{unique_identifier[:4]}{user.last_name[-3:]}".lower()
+
+            # Create the organization
+            organization = Organization.objects.create(
+                owner=user,
+                name=organization_name,
+                schema_name=organization_name
+            )
+
+            domain = slugify(organization_name)
+            base_domain = get_base_domain()  # Get base domain (localhost or production)
+            domain = f"{domain}.{base_domain}"
+
+
+            # Create a domain for the organization
+            Domain.objects.create(
+                domain=domain,
+                tenant=organization,
+                is_primary=True
+            )
+
+            # Add the user to the organization with the role specified in the invite
+            UserOrganizationRole.objects.create(
+                user=user,
+                organization=organization,
+                role='owner'
+            )
+
             data['new_user'] = False
+
+
 
         # Add user-related information to the response
         data.update({
@@ -175,6 +246,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'last_name': user.last_name,
             'profile': user.profile if user.profile else None,
             'bio': user.bio,
+            'email': user.email,
             'preferences': user.preferences,
             'stripe_subscription_id': user.stripe_subscription_id,
             'github_connected': user.github_connected,

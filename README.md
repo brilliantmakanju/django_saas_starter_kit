@@ -8,6 +8,7 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 
 ### **Authentication and User Management**  
 - Full authentication system with support for signup, login, and password reset.  
+- **Magic Link Login** powered by **django-seaman** for passwordless authentication.  
 - JWT-based authentication powered by **Django REST Framework** and **Simple JWT**.  
 - Profile management and user roles for granular access control.
 
@@ -37,7 +38,7 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 
 ### **Social Media Integration**  
 - Post to **Twitter** directly from your SaaS product (in progress).  
-- Upcoming integration for posting to **LinkedIn**.  
+- Post to **LinkedIn** directly from your SaaS product.
 
 ---
 
@@ -47,6 +48,8 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 - **Django** 5.1.4: Web framework for rapid development.  
 - **Django REST Framework (DRF)**: For building RESTful APIs.  
 - **Djoser**: Simplifies user authentication workflows.  
+- **django-seaman**: Implements **Magic Link Authentication** for seamless login.  
+
 
 ### **Database**  
 - **PostgreSQL**: Robust and scalable database, supporting multi-tenancy.  
@@ -140,7 +143,7 @@ A robust, modular, and scalable Django-based starter kit designed to accelerate 
 
 ### **Social Media Posting**  
 - Authorize the app to connect to your social media accounts.  
-- Post content directly to **Twitter** (LinkedIn support coming soon).  
+- Post content directly to **LinkedIn** (Twitter support coming soon).  
 
 ---
 
@@ -151,7 +154,8 @@ Below is a list of the main packages used in the project:
 ### **Backend Framework and API**  
 - **Django**: High-level Python web framework.  
 - **Django REST Framework**: Toolkit for building Web APIs.  
-- **Djoser**: REST implementation for Django Auth.  
+- **Djoser**: REST implementation for Django Auth.
+- **django-seaman**: Implements **Magic Link Authentication**.  
 
 ### **Task Queue and Scheduler**  
 - **Celery**: Distributed task queue.  

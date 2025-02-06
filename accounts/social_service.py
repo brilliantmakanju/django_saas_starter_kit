@@ -185,6 +185,8 @@ def linkedin_callback_oauth(request, organization):
                         'access_id_secret': member_id,  # Store member ID as 'access_id_secret' or another field
                     }
                 )
+                organization.has_linkedin = True
+                organization.save()
                 print(f"LinkedIn access token and member ID saved for organization: {organization}")
                 return JsonResponse({"message": "LinkedIn account connected successfully!"})
             else:

@@ -1,4 +1,4 @@
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from organizations.models import UserOrganizationRole
@@ -117,6 +117,49 @@ def send_invitation_email(user_email, organization, role="member", action_type="
 
     email.send(fail_silently=False)
 
+
+
+
+def send_email(subject, recipient_list, context=None, template=None, plain_message=None, from_email=None):
+    """
+    Helper function to send emails with optional HTML and plain text support.
+
+    Args:
+        subject (str): The subject of the email.
+        recipient_list (list): List of email recipients.
+        context (dict, optional): Data for rendering the email template. Defaults to None.
+        template (str, optional): Path to the HTML template for the email. Defaults to None.
+        plain_message (str, optional): Fallback plain text message if template is not provided. Defaults to None.
+        from_email (str, optional): Email address of the sender. Defaults to settings.DEFAULT_FROM_EMAIL.
+
+    Returns:
+        dict: A dictionary indicating success or error with details.
+    """
+    try:
+        if not recipient_list or not subject:
+            raise ValueError("Recipient list and subject are required.")
+
+        from_email = from_email or settings.DEFAULT_FROM_EMAIL
+
+        # Render the HTML content if a template is provided
+        html_content = render_to_string(template, context) if template else None
+
+        # Use the plain message as a fallback
+        plain_content = plain_message or "This email contains HTML content. Please use an email client that supports HTML."
+
+        # Create the email
+        email = EmailMultiAlternatives(subject, plain_content, from_email, recipient_list)
+
+        if html_content:
+            email.attach_alternative(html_content, "text/html")
+
+        # Send the email
+        email.send()
+
+        return {"success": True, "message": "Email sent successfully."}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 

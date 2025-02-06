@@ -430,6 +430,7 @@ class CreateOrRegenerateWebhookView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
 
+
     def post(self, request):
         """
         POST method to either create a new webhook or regenerate the secret for an existing one.
@@ -483,6 +484,55 @@ class CreateOrRegenerateWebhookView(APIView):
             return JsonResponse({'message': 'Webhook secret regenerated successfully.','secret_key_url': webhook_url_with_secret, 'private_secret': webhook.private_secret})
 
 
+
+
+class GetOrganizationWebhookView(APIView):
+    """
+    View to retrieve the webhook for the authenticated user's organization.
+    """
+    permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
+
+    def get(self, request):
+        """
+        GET method to retrieve the webhook for the authenticated user's organization.
+
+        Returns:
+            - If a webhook exists: webhook details.
+            - If no webhook exists: an appropriate message.
+        """
+        # Ensure the user has permission (owner or admin of the organization)
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You do not have permission to modify webhooks for this organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Check if the organization has platform(s) enabled and generate webhook details
+        if not organization.can_generate_webhook():
+            return JsonResponse({
+                "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
+            }, status=403)
+
+        try:
+            # Retrieve the webhook for the organization
+            webhook = Webhook.objects.get(organization=organization)
+
+            # Construct the webhook URL with the public secret
+            webhook_url = f"{request.build_absolute_uri('/api/v1/webhook/')}"
+            webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
+
+            return JsonResponse({
+                'message': 'Webhook retrieved successfully.',
+                'secret_key_url': webhook_url_with_secret,
+                'private_secret': webhook.private_secret
+            })
+
+        except Webhook.DoesNotExist:
+            return Response({'message': 'No webhook found for this organization.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 

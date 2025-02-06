@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GitHubWebhookView, CreateOrRegenerateWebhookView, PostView, PostGroupView
+from .views import GitHubWebhookView, CreateOrRegenerateWebhookView, PostView, PostGroupView, GetOrganizationWebhookView
 
 urlpatterns = [
     # Webhook endpoint for GitHub (Handles incoming push events from GitHub)
@@ -7,6 +7,9 @@ urlpatterns = [
 
     # Create or Regenerate Webhook secrets for GitHub
     path('webhook/create_or_regenerate/', CreateOrRegenerateWebhookView.as_view(), name='create_or_regenerate_webhook'),
+
+    # Retrieve Webhook secrets for GitHub
+    path('webhook/retrieve/', GetOrganizationWebhookView.as_view(), name='create_or_regenerate_webhook'),
 
     # PostView: Retrieve, Create, Edit, Delete Posts, Restore Deleted Post
     path('posts/', PostView.as_view(), name='posts'),  # For getting all posts, creating new post, and editing post

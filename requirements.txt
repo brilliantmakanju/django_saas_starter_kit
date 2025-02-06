@@ -24,12 +24,15 @@ django-cors-headers==4.6.0
 django-extensions==3.2.3
 django-oauth-toolkit==3.0.1
 django-rest-framework-social-oauth2==1.2.0
+django-sesame==3.2.2
 django-tenants==3.7.0
 django-timezone-field==7.0
 djangorestframework==3.15.2
 djangorestframework_simplejwt==5.4.0
+djangoviz==0.1.1
 djoser==2.3.1
 drf-social-oauth2==3.1.0
+graphqlclient==0.2.4
 h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
@@ -42,7 +45,7 @@ oauthlib==3.2.2
 openai==1.59.6
 pillow==11.1.0
 prompt_toolkit==3.0.48
-psycopg2==2.9.10
+psycopg2-binary==2.9.10
 pycparser==2.22
 pydantic==2.10.5
 pydantic_core==2.27.2

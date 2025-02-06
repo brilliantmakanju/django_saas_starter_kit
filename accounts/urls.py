@@ -7,8 +7,8 @@ from .views import (
     CreateSubscriptionAPIView,
     get_jwt_from_oauth,
     stripe_webhook,
-    ProtectedRouteView,
-    SocialCallBack, LinkedInSocialCallBack
+    SocialCallBack, LinkedInSocialCallBack,
+    ConfirmMagicLinkView, SendMagicLinkView
 )
 
 urlpatterns = [
@@ -19,15 +19,14 @@ urlpatterns = [
     path('jwt-access/', get_jwt_from_oauth, name='auth-jwt-access'),
     path('twitter/callback/', SocialCallBack.as_view(), name='social-twitter-callback'),
     path('linkedin/callback/', LinkedInSocialCallBack.as_view(), name='social-linkedin-callback'),
+    path('magic-link/send/', SendMagicLinkView.as_view(), name='auth-send-magic-link'),
+    path('magic-link/confirm/', ConfirmMagicLinkView.as_view(), name='auth-confirm-magic-link'),
 
     # Subscription Endpoints
     path('subscriptions/create/', CreateSubscriptionAPIView.as_view(), name='subscriptions-create'),
 
     # Stripe Webhook
     path('webhooks/stripe/', stripe_webhook, name='stripe-webhook'),
-
-    # Protected Route (Only accessible to authenticated users)
-    path('protected/', ProtectedRouteView.as_view(), name='protected-route'),
 
     # User Profile Endpoints
     path('profile/update/', UserProfileUpdateView.as_view(), name='profile-update')

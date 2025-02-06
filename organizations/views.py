@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 
 from accounts.permissions import TenantAccessPermission
 from .models import Organization, Domain, UserOrganizationRole, InviteCode
-from .serializers import OrganizationSerializer
+from .serializers import OrganizationSerializer, UpdateOrganizationSerializer
 
 from accounts.utlis.utlis import is_organization_owner, send_invitation_email
 
@@ -99,15 +99,21 @@ class OrganizationView(APIView):
                 'user_id': request.user.id
             }, status=status.HTTP_200_OK)
 
-    def patch(self, request):
+    def put(self, request):
         """
-        Handle the PATCH request for updating an organization.
+        Handle the PUT request for updating an organization.
         """
-        pk = request.GET.get("id")
-        try:
-            # Fetch the organization instance
-            organization = Organization.objects.get(id=pk)
+        organization = getattr(request, 'organization', None)
 
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to update the organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        try:
             # Check if the current user is the owner of the organization
             if organization.owner != request.user:
                 return Response({
@@ -115,11 +121,18 @@ class OrganizationView(APIView):
                 }, status=status.HTTP_403_FORBIDDEN)
 
             # Create and validate the serializer
-            serializer = OrganizationSerializer(organization, data=request.data, partial=True,
+            serializer = UpdateOrganizationSerializer(organization, data=request.data, partial=True,
                                                 context={'request': request})
 
             if serializer.is_valid():
                 updated_organization = serializer.save()
+
+                # Retrieve the updated organization instance with all fields (including domain, etc.)
+                updated_organization = Organization.objects.get(id=updated_organization.id)
+                updated_domain = Domain.objects.get(tenant=updated_organization.id)
+
+                print(updated_domain, "Domains and ALl right")
+
 
                 # Return success response with the updated organization data
                 return Response({
@@ -128,11 +141,12 @@ class OrganizationView(APIView):
                         'id': updated_organization.id,
                         'name': updated_organization.name,
                         'description': updated_organization.description,
-                        'domain': updated_organization.domain,
+                        'domain': f'{updated_domain}',
                     }
                 }, status=status.HTTP_200_OK)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         except Organization.DoesNotExist:
             return Response({
                 'message': 'Organization not found.'
@@ -142,18 +156,17 @@ class OrganizationView(APIView):
         """
         Handle the DELETE request for deleting an organization.
         """
-        pk = request.GET.get("id")  # Get the organization ID from the query parameter
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to add delete organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         try:
-            # Fetch the organization instance
-            organization = Organization.objects.get(id=pk)
-
-            # Check if the current user is the owner of the organization
-            if organization.owner != request.user:
-                return Response({
-                    'message': 'You do not have permission to delete this organization.'
-                }, status=status.HTTP_403_FORBIDDEN)
-
             # Delete the organization
             organization.delete()
 
@@ -166,6 +179,26 @@ class OrganizationView(APIView):
             return Response({
                 'message': 'Organization not found.'
             }, status=status.HTTP_404_NOT_FOUND)
+
+class IsOwner(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Check if the user is the owner of the organization.
+        Returns True if the user is the owner, False otherwise.
+        """
+        organization = getattr(request, 'organization', None)
+
+        print(request, "Request")
+
+        if not organization:
+            return Response({'is_owner': False}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user is the owner
+        organization_owner = is_organization_owner(request.user, organization)
+
+        return Response({'is_owner': organization_owner}, status=status.HTTP_200_OK)
 
 class TeamMembersView(APIView):
     permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
@@ -429,3 +462,39 @@ class UpdateToneSettingsView(APIView):
         organization.save()
 
         return Response({'message': 'Tone settings updated successfully.'}, status=status.HTTP_200_OK)
+
+class OrganizationStatusView(APIView):
+    """
+    View to check the social media connection status (Twitter & LinkedIn) of an organization.
+    """
+    permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
+
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieves the organization's connection status for Twitter and LinkedIn.
+        Only the organization owner can access this information.
+        """
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to add delete organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            # Get the social media connection status
+            has_twitter = organization.has_twitter  # Assuming you have a field for this
+            has_linkedin = organization.has_linkedin  # Assuming you have a field for this
+
+            return Response({
+                "organization": organization.name,
+                "has_twitter": has_twitter,
+                "has_linkedin": has_linkedin
+            }, status=status.HTTP_200_OK)
+
+        except Organization.DoesNotExist:
+            return Response({"detail": "Organization not found."}, status=status.HTTP_404_NOT_FOUND)
