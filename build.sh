@@ -2,8 +2,11 @@ echo "🚀 Starting Render Build Process..."
 
 # Install dependencies
 echo "📦 Installing dependencies..."
+python3.9 -m venv viper
+source viper/bin/activate
 python3.9 -m pip install --upgrade pip
 python3.9 -m pip install -r requirements.txt
+
 
 # Apply database migrations
 echo "🛠 Applying database migrations..."
