@@ -64,7 +64,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-ALLOWED_HOSTS = ['discrete-sacred-bobcat.ngrok-free.app', 'localhost', '127.0.0.1', "*"]
+ALLOWED_HOSTS = ['discrete-sacred-bobcat.ngrok-free.app', 'django-saas-starter-kit.vercel.app', 'localhost', '127.0.0.1', "*"]
 
 # Application definitions
 # **SHARED_APPS** is for apps that will be shared across all tenants.
