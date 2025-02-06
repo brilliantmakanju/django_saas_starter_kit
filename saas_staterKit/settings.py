@@ -165,25 +165,25 @@ CELERY_TIMEZONE = 'UTC'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 # Use this configuration for connecting to an SQLite database (simple setup for local development/testing).
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',  # SQLite database file located in the BASE_DIR
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # SQLite database file located in the BASE_DIR
+    }
+}
 
 # Use this configuration to connect to a PostgreSQL database.
 # Requires environment variables for security and flexibility in production.
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
-        'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
-        'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
-        'HOST': 'localhost',              # Database server host (localhost for local dev)
-        'PORT': '5432',                   # Default PostgreSQL port
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django_tenants.postgresql_backend',
+#         'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
+#         'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
+#         'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
+#         'HOST': 'localhost',              # Database server host (localhost for local dev)
+#         'PORT': '5432',                   # Default PostgreSQL port
+#     }
+# }
 
 # LOGGING = {
 #     'version': 1,
