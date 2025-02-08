@@ -9,6 +9,10 @@ from datetime import datetime
 
 CONSUMER_KEY = ""
 CONSUMER_SECRET = ""
+#
+# pydantic==2.10.5
+# pydantic_core==2.27.2
+# pygraphviz==1.14
 
 # File to save access tokens for reuse
 TOKEN_FILE = "twitter_tokens.json"
