@@ -60,9 +60,11 @@ DJANGO_PRODUCT_OWNER_EMAIL = os.getenv('DJANGO_PRODUCT_OWNER_EMAIL', 'brilliantm
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
-
+# Check if HOST_DOMAIN is set in environment variables
+HOST_DOMAIN = os.getenv("HOST_DOMAIN")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+# Set DEBUG to False if HOST_DOMAIN is present, otherwise True
+DEBUG = not bool(HOST_DOMAIN)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', "*", "jolexhive-django-saaskit.up.railway.app", "devbackend.jolexhive.com"]
 
@@ -184,14 +186,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),                   # Default PostgreSQL port
     }
 }
-#
-# DATABASES['default'] = dj_database_url.parse(
-# #         url=os.getenv("DATABASE_URL"),
-# #         engine="django_tenants.postgresql_backend"
-# # )
-# #
-
-
 
 
 # LOGGING = {
