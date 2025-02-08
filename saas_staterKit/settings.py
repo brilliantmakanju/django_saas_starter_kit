@@ -174,25 +174,30 @@ CELERY_TIMEZONE = 'UTC'
 # }
 
 # Use this configuration to connect to a PostgreSQL database.
-# Requires environment variables for security and flexibility in production.
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django_tenants.postgresql_backend',
-#         'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
-#         'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
-#         'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
-#         'HOST': 'localhost',              # Database server host (localhost for local dev)
-#         'PORT': '5432',                   # Default PostgreSQL port
-#     }
-# }
-
-
+# # Requires environment variables for security and flexibility in production.
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
-        engine="django_tenants.postgresql_backend"
-    )
+    'default': {
+        'ENGINE': 'django_tenants.postgresql_backend',
+        'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
+        'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
+        'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
+        'HOST': 'localhost',              # Database server host (localhost for local dev)
+        'PORT': '5432',                   # Default PostgreSQL port
+    }
 }
+#
+# DATABASES['default'] = dj_database_url.parse(
+# #         url=os.getenv("DATABASE_URL"),
+# #         engine="django_tenants.postgresql_backend"
+# # )
+# #
+# DATABASES = {
+#     'default': dj_database_url.parse(
+#         url=os.getenv("DATABASE_URL"),
+#         engine="django_tenants.postgresql_backend",
+#
+#     )
+# }
 
 # LOGGING = {
 #     'version': 1,
@@ -441,8 +446,6 @@ CSRF_COOKIE_SECURE = True
 # }
 
 SIMPLE_JWT = {
-    # Authentication Header Prefix
-    "AUTH_HEADER_TYPES": ("Bearer",),
     # Authentication Header Prefix
     "AUTH_HEADER_TYPES": ("Bearer",),
 
