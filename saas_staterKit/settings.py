@@ -180,8 +180,8 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
         'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
         'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
-        'HOST': 'localhost',              # Database server host (localhost for local dev)
-        'PORT': '5432',                   # Default PostgreSQL port
+        'HOST': os.getenv('DB_HOST', 'localhost'),              # Database server host (localhost for local dev)
+        'PORT': os.getenv('DB_PORT', '5432'),                   # Default PostgreSQL port
     }
 }
 #
