@@ -66,7 +66,19 @@ HOST_DOMAIN = os.getenv("HOST_DOMAIN")
 # Set DEBUG to False if HOST_DOMAIN is present, otherwise True
 DEBUG = not bool(HOST_DOMAIN)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', "*", "jolexhive-django-saaskit.up.railway.app", "devbackend.jolexhive.com"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "jolexhive-django-saaskit.up.railway.app",  # Railway deployment
+    HOST_DOMAIN,  # Main domain
+    f".{HOST_DOMAIN}",  # Allows all subdomains (e.g., brilliant.devbackend.jolexhive.com)
+]
+
+# Allow wildcard domains only in DEBUG mode for local testing
+if DEBUG:
+    ALLOWED_HOSTS.append("*")  # Allow all in local development
+
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1', "*", "jolexhive-django-saaskit.up.railway.app", "devbackend.jolexhive.com", ""]
 
 # Application definitions
 # **SHARED_APPS** is for apps that will be shared across all tenants.
