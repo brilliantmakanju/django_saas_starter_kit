@@ -130,14 +130,18 @@ def linkedin_initiate_oauth(request):
     """
     Initiates the LinkedIn OAuth process and returns the authorization URL.
     """
-    auth_url = f"https://www.linkedin.com/oauth/v2/authorization?{urlencode({
-        'response_type': 'code',
-        'client_id': LINKEDIN_CLIENT_ID,
-        'redirect_uri': LINKEDIN_REDIRECT_URI,
-        'scope': LINKEDIN_SCOPE
-    })}"
-    print(f"LinkedIn Authorization URL: {auth_url}")
+
+    auth_url = "https://www.linkedin.com/oauth/v2/authorization?{}".format(
+        urlencode({
+            'response_type': 'code',
+            'client_id': LINKEDIN_CLIENT_ID,
+            'redirect_uri': LINKEDIN_REDIRECT_URI,
+            'scope': LINKEDIN_SCOPE
+        })
+    )
+    # print(f"LinkedIn Authorization URL: {auth_url}".format())
     return JsonResponse({"authorization_url": auth_url})
+
 
 def linkedin_callback_oauth(request, organization):
     """
