@@ -44,10 +44,22 @@ class SubdomainMiddleware:
 
         print(f"Host: {host}")  # Debugging the host
 
-        # Check if it's a subdomain (e.g., samsung.localhost)
-        if len(parts) > 1:
-            # It's a subdomain, return it
-            return host  # First part is the subdomain (e.g., "samsung" in "samsung.localhost")
+        # In production, use the base domain from the environment variable
+        base_domain = os.getenv('HOST_DOMAIN', 'example.com')
+        if host == base_domain:
+            print("Production mode: Base domain matched.")
+            return None  # No subdomain, just the base domain
+
+         # ✅ If the domain contains subdomains (e.g., "sub.devbackend.jolexhive.com"), return full host
+        if len(parts) > 2 and host.endswith(base_domain):
+            subdomain = parts[0]  # Extract subdomain
+            print(f"Subdomain detected: {subdomain}")
+            return subdomain  # Return the subdomain part only
+
+        # # Check if it's a subdomain (e.g., samsung.localhost)
+        # if len(parts) > 1:
+        #     # It's a subdomain, return it
+        #     return host  # First part is the subdomain (e.g., "samsung" in "samsung.localhost")
 
         # If no subdomain, check if it's localhost or an IP address, based on DEBUG setting
         if settings.DEBUG:
@@ -56,11 +68,7 @@ class SubdomainMiddleware:
                 print("DEBUG mode: Localhost or 127.0.0.1")
                 return None  # No subdomain, use default domain
 
-        # In production, use the base domain from the environment variable
-        base_domain = os.getenv('HOST_DOMAIN', 'example.com')
-        if host == base_domain:
-            print("Production mode: Base domain matched.")
-            return None  # No subdomain, just the base domain
+
 
         # If no subdomain and it's not localhost or the base domain, return None
         return None
