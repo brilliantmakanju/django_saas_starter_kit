@@ -459,7 +459,7 @@ SIMPLE_JWT = {
 
     # Security Features
     "ALGORITHM": "HS256",  # Default algorithm for JWT
-    "SIGNING_KEY": SECRET_KEY,  # Use Django's secret key
+    "SIGNING_KEY": os.getenv("SECRET_KEY"),  # Use Django's secret key
     "VERIFYING_KEY": None,  # Optional public key for asymmetric signing
     "AUDIENCE": None,  # Define audience for the token
     # "ISSUER": "yourdomain.com",  # Define token issuer
