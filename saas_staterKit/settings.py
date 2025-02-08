@@ -193,9 +193,8 @@ DATABASES = {
 # #
 # DATABASES = {
 #     'default': dj_database_url.parse(
-#         url=os.getenv("DATABASE_URL"),
 #         engine="django_tenants.postgresql_backend",
-#
+#         url= os.getenv("DATABASE_URL"),
 #     )
 # }
 
