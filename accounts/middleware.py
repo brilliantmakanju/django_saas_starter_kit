@@ -43,6 +43,8 @@ class SubdomainMiddleware:
         parts = host.split('.')  # Split the host by dots to get parts
 
         print(f"Host: {host}")  # Debugging the host
+        print(f"parts: {parts}")  # Debugging the host
+
 
         # In production, use the base domain from the environment variable
         base_domain = os.getenv('HOST_DOMAIN', 'example.com')
