@@ -15,7 +15,6 @@ from pathlib import Path
 from celery.schedules import crontab
 from datetime import timedelta
 from dotenv import load_dotenv
-import dj_database_url
 
 load_dotenv()
 
@@ -191,12 +190,8 @@ DATABASES = {
 # #         engine="django_tenants.postgresql_backend"
 # # )
 # #
-# DATABASES = {
-#     'default': dj_database_url.parse(
-#         engine="django_tenants.postgresql_backend",
-#         url= os.getenv("DATABASE_URL"),
-#     )
-# }
+
+
 
 
 # LOGGING = {
@@ -459,7 +454,7 @@ SIMPLE_JWT = {
 
     # Security Features
     "ALGORITHM": "HS256",  # Default algorithm for JWT
-    "SIGNING_KEY": os.getenv("SECRET_KEY"),  # Use Django's secret key
+    "SIGNING_KEY": SECRET_KEY,  # Use Django's secret key
     "VERIFYING_KEY": None,  # Optional public key for asymmetric signing
     "AUDIENCE": None,  # Define audience for the token
     # "ISSUER": "yourdomain.com",  # Define token issuer
