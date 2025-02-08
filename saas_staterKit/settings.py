@@ -71,7 +71,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "jolexhive-django-saaskit.up.railway.app",  # Railway deployment
     HOST_DOMAIN,  # Main domain
-    f".{HOST_DOMAIN}",  # Allows all subdomains (e.g., brilliant.devbackend.jolexhive.com)
+    f"*.{HOST_DOMAIN}",  # Allows all subdomains (e.g., brilliant.devbackend.jolexhive.com)
 ]
 
 # Allow wildcard domains only in DEBUG mode for local testing
