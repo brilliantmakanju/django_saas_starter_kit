@@ -15,6 +15,7 @@ cron-descriptor==1.4.5
 cryptography==44.0.0
 defusedxml==0.8.0rc2
 distro==1.9.0
+dj-database-url==2.3.0
 Django==5.1.6
 django-admin-interface==0.29.3
 django-background-tasks==1.2.8
@@ -49,6 +50,9 @@ pillow==11.1.0
 prompt_toolkit==3.0.48
 psycopg2-binary==2.9.10
 pycparser==2.22
+pydantic==2.10.5
+pydantic_core==2.27.2
+pygraphviz==1.14
 PyJWT==2.10.1
 python-crontab==3.2.0
 python-dateutil==2.9.0.post0

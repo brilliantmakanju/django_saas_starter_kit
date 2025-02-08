@@ -15,6 +15,7 @@ from pathlib import Path
 from celery.schedules import crontab
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -64,7 +65,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
 
-ALLOWED_HOSTS = ['discrete-sacred-bobcat.ngrok-free.app', 'localhost', '127.0.0.1', "*"]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', "*", "djangosaasstarterkit-production.up.railway.app"]
 
 # Application definitions
 # **SHARED_APPS** is for apps that will be shared across all tenants.
@@ -174,15 +175,23 @@ CELERY_TIMEZONE = 'UTC'
 
 # Use this configuration to connect to a PostgreSQL database.
 # Requires environment variables for security and flexibility in production.
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django_tenants.postgresql_backend',
+#         'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
+#         'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
+#         'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
+#         'HOST': 'localhost',              # Database server host (localhost for local dev)
+#         'PORT': '5432',                   # Default PostgreSQL port
+#     }
+# }
+
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': os.getenv('DB_NAME'),          # PostgreSQL database name
-        'USER': os.getenv('DB_USERNAME'),       # PostgreSQL username
-        'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
-        'HOST': 'localhost',              # Database server host (localhost for local dev)
-        'PORT': '5432',                   # Default PostgreSQL port
-    }
+    'default': dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        engine="django_tenants.postgresql_backend"
+    )
 }
 
 # LOGGING = {
@@ -252,6 +261,7 @@ CELERY_BEAT_SCHEDULE = {
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICSTORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'build/static')
 ]

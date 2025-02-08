@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import json, ipaddress
+from rest_framework.pagination import PageNumberPagination
 from django.http import JsonResponse
 from django.views import View
 from django.conf import settings
@@ -28,9 +29,28 @@ from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
+class PostPagination(PageNumberPagination):
+    """
+    Custom pagination for Posts.
+    """
+    page_size = 1  # Default page size
+    page_size_query_param = 'page'  # Allows client to specify page size
+    max_page_size = 50  # Prevent excessive queries
+
+    def get_paginated_response(self, data):
+        """
+        Returns a structured paginated response.
+        """
+        return Response({
+            'count': self.page.paginator.count,  # Total number of posts
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'results': data  # Paginated posts
+        })
 
 class PostView(APIView):
     permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
+    pagination_class = PostPagination
 
     def get(self, request, *args, **kwargs):
         """
@@ -90,7 +110,12 @@ class PostView(APIView):
             reverse=True
         )
 
-        return Response(combined_result, status=status.HTTP_200_OK)
+        # return Response(combined_result, status=status.HTTP_200_OK)
+        # Apply pagination
+        paginator = self.pagination_class()
+        paginated_result = paginator.paginate_queryset(combined_result, request)
+
+        return paginator.get_paginated_response(paginated_result)
 
     def post(self, request, *args, **kwargs):
         """
