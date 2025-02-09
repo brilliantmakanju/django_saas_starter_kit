@@ -72,8 +72,6 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 if DEBUG:
     ALLOWED_HOSTS.append("*")  # Allow all in local development
 
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1', "*", "jolexhive-django-saaskit.up.railway.app", "devbackend.jolexhive.com", ""]
-
 # Application definitions
 # **SHARED_APPS** is for apps that will be shared across all tenants.
 SHARED_APPS = [
@@ -103,7 +101,6 @@ SHARED_APPS = [
     'organizations',
 ]
 
-
 # **TENANT_APPS** is for apps that will be specific to each tenant.
 TENANT_APPS = [
     'core',
@@ -113,7 +110,6 @@ TENANT_APPS = [
 INSTALLED_APPS = SHARED_APPS + [
     app for app in TENANT_APPS if app not in SHARED_APPS
 ]
-
 
 # Using the TenantSyncRouter to route tenant queries to the correct schema
 DATABASE_ROUTERS = ['django_tenants.routers.TenantSyncRouter']
@@ -270,11 +266,11 @@ CORS_ORIGIN_ALLOW_ALL = False
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
 # Ensure local frontend works in DEBUG mode
-if os.getenv("DEBUG", "True") == "True":
+if DEBUG:
     CORS_ALLOWED_ORIGINS.append("http://localhost:3000")
 
 # Allow all subdomains of the main domain for CSRF protection
-CSRF_TRUSTED_ORIGINS = ["https://" + host for host in ALLOWED_HOSTS if host]
+CSRF_TRUSTED_ORIGINS = ["https://" + host for host in ALLOWED_HOSTS]
 
 CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, tokens)
 
