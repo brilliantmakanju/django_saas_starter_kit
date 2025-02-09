@@ -52,11 +52,13 @@ class SubdomainMiddleware:
             print("Production mode: Base domain matched.")
             return None  # No subdomain, just the base domain
 
-         # ✅ If the domain contains subdomains (e.g., "sub.devbackend.jolexhive.com"), return full host
+         # If the domain contains subdomains (e.g., "sub.devbackend.jolexhive.com"), return full host
         if len(parts) > 2 and host.endswith(base_domain):
             subdomain = parts[0]  # Extract subdomain
             print(f"Subdomain detected: {subdomain}")
-            return subdomain  # Return the subdomain part only
+            # return subdomain  # Return the subdomain part only
+            return host  # Return the subdomain part only
+
 
         # # Check if it's a subdomain (e.g., samsung.localhost)
         # if len(parts) > 1:
