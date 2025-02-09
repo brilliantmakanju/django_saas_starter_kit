@@ -769,9 +769,9 @@ class ConfirmMagicLinkView(APIView):
 
         return Response({
             "message": "Login successful.",
+            "user": user_data,
             "refresh": str(refresh),
-            "access": str(refresh.access_token),
-            "user": user_data
+            "access": str(refresh.access_token)
         }, status=status.HTTP_200_OK)
 
 
