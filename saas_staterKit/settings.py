@@ -66,13 +66,7 @@ HOST_DOMAIN = os.getenv("HOST_DOMAIN")
 # Set DEBUG to False if HOST_DOMAIN is present, otherwise True
 DEBUG = not bool(HOST_DOMAIN)
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "jolexhive-django-saaskit.up.railway.app",  # Railway deployment
-    HOST_DOMAIN,  # Main domain
-    "*",  # Allows all subdomains (e.g., brilliant.devbackend.jolexhive.com)
-]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Allow wildcard domains only in DEBUG mode for local testing
 if DEBUG:
@@ -177,15 +171,6 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'
 
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-# Use this configuration for connecting to an SQLite database (simple setup for local development/testing).
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',  # SQLite database file located in the BASE_DIR
-#     }
-# }
-
 # Use this configuration to connect to a PostgreSQL database.
 # # Requires environment variables for security and flexibility in production.
 DATABASES = {
@@ -279,10 +264,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# CORS CONFIGURATION
 CORS_ORIGIN_ALLOW_ALL = False
-CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
+# Parse CORS_ALLOWED_ORIGINS from environment variables
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
-CORS_ALLOW_HEADERS = (
+# Ensure local frontend works in DEBUG mode
+if os.getenv("DEBUG", "True") == "True":
+    CORS_ALLOWED_ORIGINS.append("http://localhost:3000")
+
+# Allow all subdomains of the main domain for CSRF protection
+CSRF_TRUSTED_ORIGINS = ["https://" + host for host in ALLOWED_HOSTS if host]
+
+CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, tokens)
+
+CORS_ALLOW_METHODS = [
+    "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+]
+
+CORS_ALLOW_HEADERS = [
     "x-requested-with",
     "content-type",
     "accept",
@@ -291,13 +291,7 @@ CORS_ALLOW_HEADERS = (
     "accept-encoding",
     "access-control-allow-origin",
     "content-disposition",
-)
-
-CSRF_TRUSTED_ORIGINS = ["https://" + host for host in ALLOWED_HOSTS]
-
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+]
 
 AUTH_USER_MODEL = "accounts.UserAccount"
 
