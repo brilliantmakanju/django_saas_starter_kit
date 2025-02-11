@@ -190,8 +190,6 @@ class IsOwner(APIView):
         """
         organization = getattr(request, 'organization', None)
 
-        print(request, "Request")
-
         if not organization:
             return Response({'is_owner': False}, status=status.HTTP_404_NOT_FOUND)
 

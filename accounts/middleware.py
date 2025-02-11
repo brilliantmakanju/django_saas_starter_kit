@@ -59,11 +59,11 @@ class SubdomainMiddleware:
             # return subdomain  # Return the subdomain part only
             return host  # Return the subdomain part only
 
-
-        # # Check if it's a subdomain (e.g., samsung.localhost)
-        # if len(parts) > 1:
-        #     # It's a subdomain, return it
-        #     return host  # First part is the subdomain (e.g., "samsung" in "samsung.localhost")
+        if settings.DEBUG:
+            # Check if it's a subdomain (e.g., samsung.localhost)
+            if len(parts) > 1:
+                # It's a subdomain, return it
+                return host  # First part is the subdomain (e.g., "samsung" in "samsung.localhost")
 
         # If no subdomain, check if it's localhost or an IP address, based on DEBUG setting
         if settings.DEBUG:

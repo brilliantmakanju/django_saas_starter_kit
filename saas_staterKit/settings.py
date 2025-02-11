@@ -43,7 +43,7 @@ TWITTER_REDIRECT_URI = os.getenv("TWITTER_REDIRECT_URI", "")
 
 LINKEDIN_CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID", "")
 LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET", "")
-LINKEDIN_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI", "")
+LINKEDIN_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI", "http://localhost:3000/settings?tab=general")
 LINKEDIN_SCOPE = "openid profile w_member_social email"
 
 
