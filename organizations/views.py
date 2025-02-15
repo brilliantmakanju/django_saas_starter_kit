@@ -434,7 +434,40 @@ class TransferOwnershipView(APIView):
 class UpdateToneSettingsView(APIView):
     permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
 
-    def patch(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve the tone settings for the organization, including:
+          - The current selected tone.
+          - Whether tones are set to shuffle.
+          - A list of all available tone choices.
+        """
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user has permission to view tone settings
+        if not is_organization_owner_or_admin(request.user, organization):
+            return Response({'message': 'You are not authorized to view tone settings.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Get available tone choices from the Organization model.
+        # Assuming Organization.TONE_CHOICES exists, e.g.:
+        # TONE_CHOICES = (
+        #     ('formal', 'Formal'),
+        #     ('casual', 'Casual'),
+        #     ('friendly', 'Friendly'),
+        # )
+        available_tones = [{'value': value, 'display': display} for value, display in organization.TONE_CHOICES]
+
+        data = {
+            'selected_tone': organization.selected_tone,
+            'shuffle_tones': organization.shuffle_tones,
+            'available_tones': available_tones
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
         """
         Update tone settings for the organization.
         """
@@ -451,15 +484,35 @@ class UpdateToneSettingsView(APIView):
         # Validate and update tone settings
         tone = request.data.get('selected_tone')
         shuffle = request.data.get('shuffle_tones', False)
+        print(tone, "Tones Selected")
+        print(shuffle, "Shuffle tone")
 
-        if tone and tone not in dict(Organization.TONE_CHOICES):
-            return Response({'message': 'Invalid tone selected.'}, status=status.HTTP_400_BAD_REQUEST)
+        if tone:
+            # If tone is a list, validate each tone and join them into a comma-separated string
+            if isinstance(tone, list):
+                for t in tone:
+                    if t not in dict(Organization.TONE_CHOICES):
+                        return Response({'message': 'Invalid tone selected: {}'.format(t)},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                tone_str = ','.join(tone)
+            else:
+                # If tone is not a list, validate it normally
+                if tone not in dict(Organization.TONE_CHOICES):
+                    return Response({'message': 'Invalid tone selected.'}, status=status.HTTP_400_BAD_REQUEST)
+                tone_str = tone
+            organization.selected_tone = tone_str
 
-        organization.selected_tone = tone or organization.selected_tone
         organization.shuffle_tones = shuffle
         organization.save()
 
-        return Response({'message': 'Tone settings updated successfully.'}, status=status.HTTP_200_OK)
+        # When returning, convert the stored comma-separated tones back into a list
+        tones_list = [t.strip() for t in organization.selected_tone.split(',') if t.strip()]
+
+        return Response({
+            'message': 'Tone settings updated successfully.',
+            'selected_tones': tones_list,
+            'shuffle_tones': organization.shuffle_tones
+        }, status=status.HTTP_200_OK)
 
 class OrganizationStatusView(APIView):
     """

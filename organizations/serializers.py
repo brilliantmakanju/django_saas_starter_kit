@@ -34,6 +34,24 @@ def get_base_domain():
     else:
         return os.getenv('HOST_DOMAIN', 'example.com')  # Use the environment variable for production domain
 
+
+class CommaSeparatedListField(serializers.CharField):
+    """
+    A custom field that accepts a list of strings and stores them as a comma-separated string,
+    and outputs the comma-separated string as a list.
+    """
+    def to_internal_value(self, data):
+        # If data is a list, join it into a comma-separated string.
+        if isinstance(data, list):
+            data = ','.join(data)
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        # If the value is a non-empty string, split it by commas and strip whitespace.
+        if value:
+            return [item.strip() for item in value.split(',') if item.strip()]
+        return []
+
 class OrganizationSerializer(serializers.ModelSerializer):
     domain = serializers.CharField(write_only=True, required=False)  # Optional for user input
 

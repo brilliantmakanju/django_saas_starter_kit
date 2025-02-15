@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views import View
 from django.conf import settings
 from rest_framework.views import APIView
+from django.core.exceptions import ObjectDoesNotExist
 
 from .serializers import PostSerializer
 from django.db.models import Max
@@ -33,7 +34,7 @@ class PostPagination(PageNumberPagination):
     """
     Custom pagination for Posts.
     """
-    page_size = 1  # Default page size
+    page_size = 50  # Default page size
     page_size_query_param = 'page'  # Allows client to specify page size
     max_page_size = 50  # Prevent excessive queries
 
@@ -140,7 +141,7 @@ class PostView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         """
         Edit an existing post.
         """
@@ -185,9 +186,9 @@ class PostView(APIView):
         post = get_object_or_404(Post, id=post_id, organization=organization, is_deleted=False)
         post.is_deleted = True
         post.save()
-        return Response({"message": "Post moved to trash."}, status=status.HTTP_200_OK)
+        return Response({"message": "Post moved to trash."}, status=status.HTTP_204_NO_CONTENT)
 
-    def put(self, request, *args, **kwargs):
+    def patch(self, request, *args, **kwargs):
         """
         Restore a deleted post.
         """
@@ -510,6 +511,90 @@ class CreateOrRegenerateWebhookView(APIView):
 
 
 
+class UpdateWebhookSettingsView(APIView):
+    """
+    API endpoint to retrieve and update the GitHub webhook settings for an organization.
+    Only the organization owner is allowed to view or modify these settings.
+
+    GET: Returns the current branch and repo associated with the organization's webhook.
+    PUT: Updates the branch and repo fields for the organization's webhook.
+    """
+    permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
+
+    def get(self, request, *args, **kwargs):
+        # Retrieve the organization from the request (e.g., via middleware)
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You do not have permission to modify webhooks for this organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Check if the organization has platform(s) enabled and generate webhook details
+        if not organization.can_generate_webhook():
+            return JsonResponse({
+                "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
+            }, status=403)
+
+        try:
+            # Since Organization has a OneToOne relation with Webhook (via related_name "webhook")
+            webhook = organization.webhook
+        except ObjectDoesNotExist:
+            return Response({'message': 'Webhook not found for this organization.'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        # Return the current branch and repo settings.
+        return Response({
+            'repo': webhook.repo,
+            'branch': webhook.branch
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        # Retrieve the organization from the request (via middleware)
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You do not have permission to modify webhooks for this organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Check if the organization has platform(s) enabled and generate webhook details
+        if not organization.can_generate_webhook():
+            return JsonResponse({
+                "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
+            }, status=403)
+
+        try:
+            webhook = organization.webhook
+        except ObjectDoesNotExist:
+            return Response({'message': 'Webhook not found for this organization.'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        # Retrieve new repo and branch from the request data.
+        repo = request.data.get('repo')
+        branch = request.data.get('branch')
+
+        if not branch:
+            return Response({'message': 'Branch fields must be provided.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Update webhook settings.
+        # webhook.repo = repo
+        webhook.branch = branch
+        webhook.save()
+
+        # Return the updated settings.
+        return Response({
+            'message': 'Webhook settings updated successfully.',
+            # 'repo': webhook.repo,
+            'branch': webhook.branch,
+        }, status=status.HTTP_200_OK)
 
 class GetOrganizationWebhookView(APIView):
     """

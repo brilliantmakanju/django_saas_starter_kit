@@ -35,7 +35,7 @@ class Organization(TenantMixin):
     # auto_drop_schema = True
 
     # New fields for tone selection
-    selected_tone = models.CharField(max_length=20, choices=TONE_CHOICES, default='professional')
+    selected_tone = models.CharField(max_length=255, choices=TONE_CHOICES, default='professional')
     shuffle_tones = models.BooleanField(default=False)
 
     # New fields for social media platform configuration
