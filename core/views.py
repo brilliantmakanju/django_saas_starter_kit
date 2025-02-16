@@ -320,7 +320,7 @@ class GitHubWebhookView(CsrfExemptMixin, View):
         branch = payload.get('ref', '').split('/')[-1]  # Get branch name from ref (refs/heads/<branch>)
 
         if branch != webhook.branch:
-            return JsonResponse({'error': 'Repository or branch mismatch.'}, status=400)
+            return JsonResponse({'error': 'Repository or branch mismatch.'}, status=200)
 
         # 7. Get the commit message and print it
         commit_message = payload.get('head_commit', {}).get('message', '')
