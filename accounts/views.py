@@ -682,7 +682,7 @@ class SendMagicLinkView(APIView):
         # Handle email sending failure
         if not email_result.get("success"):
             return Response(
-                {"error": "Failed to send the magic link.", "details": email_result.get("error")},
+                {"error": "Failed to send the magic link."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
