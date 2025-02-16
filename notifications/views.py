@@ -18,16 +18,16 @@ class NotificationListView(APIView):
         if not organization:
             return Response({"error": "Organization context not found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch notifications for the organization
+        # Fetch notifications for the organization, ordered by created_at descending.
         notifications = Notification.objects.filter(organization=organization).order_by('-created_at')
 
-        # Serialize notifications
-        serializer = NotificationSerializer(notifications, many=True)
+        # Serialize notifications, passing the request context.
+        serializer = NotificationSerializer(notifications, many=True, context={'request': request})
 
-        # Count notifications
+        # Count total notifications.
         total_count = notifications.count()
 
-        # Count unread notifications for the user
+        # Count unread notifications for the current user using the computed field.
         unread_count = notifications.exclude(is_read_by=request.user).count()
 
         return Response({

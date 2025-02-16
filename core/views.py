@@ -163,6 +163,9 @@ class PostView(APIView):
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            post.is_edited = True
+            post.priority = True
+            post.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -186,7 +189,7 @@ class PostView(APIView):
         post = get_object_or_404(Post, id=post_id, organization=organization, is_deleted=False)
         post.is_deleted = True
         post.save()
-        return Response({"message": "Post moved to trash."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"success": True, "message": "Post moved to trash."}, status=status.HTTP_200_OK)
 
     def patch(self, request, *args, **kwargs):
         """
@@ -484,32 +487,30 @@ class CreateOrRegenerateWebhookView(APIView):
         # Check if webhook already exists for the organization
         webhook, created = Webhook.objects.get_or_create(organization=organization)
 
+        # Generate new secrets if created or to regenerate for existing webhook
+        webhook.private_secret = generate_encrypted_secret()
+        webhook.public_secret = generate_encrypted_secret()
+        webhook.save()
+
+        # Build the webhook URL
+        webhook_url = request.build_absolute_uri('/api/v1/webhook/')
+        # Force HTTPS if not secure (or when DEBUG is False)
+        if not request.is_secure():
+            webhook_url = webhook_url.replace("http://", "https://")
+        webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
+
         if created:
-            # Generate a new secret key
-            webhook.private_secret = generate_encrypted_secret()
-            webhook.public_secret = generate_encrypted_secret()
-            webhook.save()
-
-            # Return the response with the URL containing the public secret as a query parameter
-            webhook_url = f"{request.build_absolute_uri('/api/v1/webhook/')}"  # Example endpoint URL for your system
-            webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
-
-            return JsonResponse({'message': 'Webhook created successfully.', 'secret_key_url': webhook_url_with_secret, 'private_secret': webhook.private_secret})
-
+            return JsonResponse({
+                'message': 'Webhook created successfully.',
+                'secret_key_url': webhook_url_with_secret,
+                'private_secret': webhook.private_secret
+            })
         else:
-            # Regenerate the webhook secret key
-            webhook.private_secret = generate_encrypted_secret()
-            webhook.public_secret = generate_encrypted_secret()
-            webhook.save()
-
-            # Return the response with the URL containing the public secret as a query parameter
-            webhook_url = f"{request.build_absolute_uri('/api/v1/webhook/')}"  # Example endpoint URL for your system
-            webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
-
-
-            return JsonResponse({'message': 'Webhook secret regenerated successfully.','secret_key_url': webhook_url_with_secret, 'private_secret': webhook.private_secret})
-
-
+            return JsonResponse({
+                'message': 'Webhook secret regenerated successfully.',
+                'secret_key_url': webhook_url_with_secret,
+                'private_secret': webhook.private_secret
+            })
 
 class UpdateWebhookSettingsView(APIView):
     """

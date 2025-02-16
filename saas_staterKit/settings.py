@@ -442,7 +442,7 @@ SIMPLE_JWT = {
 
     # Token Expiration Times
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),  # Short-lived access tokens
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=5),  # Longer-lived refresh tokens
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),  # Longer-lived refresh tokens
 
     # Rotation and Blacklisting
     "ROTATE_REFRESH_TOKENS": True,  # Rotate refresh tokens upon use
@@ -463,7 +463,7 @@ SIMPLE_JWT = {
 
     # Sliding Token Settings
     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
-    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=2),
 }
 # Sesame Configuration
 SESAME_MAX_AGE = 9000  # Links expire in 15 minutes (900 seconds)
