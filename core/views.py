@@ -487,16 +487,16 @@ class CreateOrRegenerateWebhookView(APIView):
         # Check if webhook already exists for the organization
         webhook, created = Webhook.objects.get_or_create(organization=organization)
 
-        # Generate new secrets if created or to regenerate for existing webhook
+        # Build the webhook URL
+        # Generate new secrets (for both new and regenerated webhooks)
         webhook.private_secret = generate_encrypted_secret()
         webhook.public_secret = generate_encrypted_secret()
         webhook.save()
 
-        # Build the webhook URL
+        # Build the webhook URL and force HTTPS if necessary
         webhook_url = request.build_absolute_uri('/api/v1/webhook/')
-        # Force HTTPS if not secure (or when DEBUG is False)
-        if not request.is_secure():
-            webhook_url = webhook_url.replace("http://", "https://")
+        if  webhook_url.startswith("http://"):
+            webhook_url = "https://" + webhook_url[len("http://"):]
         webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
 
         if created:
@@ -633,7 +633,9 @@ class GetOrganizationWebhookView(APIView):
             webhook = Webhook.objects.get(organization=organization)
 
             # Construct the webhook URL with the public secret
-            webhook_url = f"{request.build_absolute_uri('/api/v1/webhook/')}"
+            webhook_url = request.build_absolute_uri('/api/v1/webhook/')
+            if webhook_url.startswith("http://"):
+                webhook_url = "https://" + webhook_url[len("http://"):]
             webhook_url_with_secret = f"{webhook_url}?secret_key={webhook.public_secret}"
 
             return JsonResponse({
