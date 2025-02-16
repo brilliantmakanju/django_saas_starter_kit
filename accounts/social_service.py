@@ -19,7 +19,7 @@ def twitter_initiate_oauth(request):
         resource_owner_key = fetch_response.get("oauth_token")
         resource_owner_secret = fetch_response.get("oauth_token_secret")
     except ValueError as e:
-        return JsonResponse({"error": "Error fetching request token", "details": str(e)}, status=500)
+        return JsonResponse({"error": "Error fetching request token"}, status=500)
 
     # Save the keys in the session for tracking
     request.session["resource_owner_key"] = resource_owner_key
@@ -69,7 +69,7 @@ def twitter_callback_oauth(request, organization):
 
         return JsonResponse({"message": "Twitter account connected successfully!"})
     except Exception as e:
-        return JsonResponse({"error": "Error fetching access token", "details": str(e)}, status=500)
+        return JsonResponse({"error": "Error fetching access token"}, status=500)
 
 def post_tweet(tweet_text, organization):
     """
@@ -200,7 +200,7 @@ def linkedin_callback_oauth(request, organization):
             print(f"Error fetching LinkedIn access token: {response.text}")
             return JsonResponse({"error": response.json()}, status=response.status_code)
     except Exception as e:
-        return JsonResponse({"error": "Error fetching access token or member ID", "details": str(e)}, status=500)
+        return JsonResponse({"error": "Error fetching access token or member ID"}, status=500)
 
 def post_linkedin_update(post_content, organization):
     """
@@ -253,7 +253,7 @@ def post_linkedin_update(post_content, organization):
                 {"error": response.json(), "status_code": response.status_code}, status=response.status_code
             )
     except Exception as e:
-        return JsonResponse({"error": "Error posting on LinkedIn", "details": str(e)}, status=500)
+        return JsonResponse({"error": "Error posting on LinkedIn"}, status=500)
 
 
 

@@ -267,7 +267,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 BlacklistedToken.objects.get_or_create(token=outstanding_token)
             except Exception as e:
                 raise serializers.ValidationError(
-                    f"Failed to blacklist token: {str(e)}"
+                    f"Failed to blacklist user"
                 )
 
 

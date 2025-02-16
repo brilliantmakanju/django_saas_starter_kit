@@ -170,7 +170,7 @@ class CustomJWTAuthenticationMiddleware(MiddlewareMixin):
         except Exception as e:
             # General error during token validation
             return JsonResponse(
-                {"status": "error", "message": f"Token validation failed: {str(e)}. Please try again."},
+                {"status": "error", "message": f"Server Error. Please try again."},
                 status=500  # Internal Server Error
             )
 

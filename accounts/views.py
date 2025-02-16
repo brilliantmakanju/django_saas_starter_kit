@@ -717,7 +717,7 @@ class ConfirmMagicLinkView(APIView):
         try:
             user = sesame_get_user(token)
         except Exception as e:
-            return Response({"error": f"Invalid or expired link. {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"Invalid or expired link."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Ensure the user is active
         if not user or not user.is_active:
@@ -732,7 +732,7 @@ class ConfirmMagicLinkView(APIView):
                 BlacklistedToken.objects.get_or_create(token=outstanding_token)
         except Exception as e:
             return Response(
-                {"error": f"Failed to blacklist tokens: {str(e)}"},
+                {"error": f"Failed to blacklist tokens"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -772,6 +772,5 @@ class ConfirmMagicLinkView(APIView):
             "user": user_data,
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-            "testing": "DEvinds"
         }, status=status.HTTP_200_OK)
 

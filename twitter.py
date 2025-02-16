@@ -68,9 +68,6 @@ def get_access_token(resource_owner_key, resource_owner_secret):
         access_token = oauth_tokens.get("oauth_token")
         access_token_secret = oauth_tokens.get("oauth_token_secret")
 
-        print("Access token:", access_token)
-        print("Access token secret:", access_token_secret)
-
         # Save tokens for reuse
         save_tokens(access_token, access_token_secret)
         return access_token, access_token_secret
@@ -113,7 +110,6 @@ if __name__ == "__main__":
         # Step 2: Get the authorization URL
         auth_url, owner_key, owner_secret = get_request_token()
         if auth_url:
-            print(f"Go to this URL and authorize the app: {auth_url}")
 
             # Step 3: Fetch access token
             access_token, access_token_secret = get_access_token(owner_key, owner_secret)
