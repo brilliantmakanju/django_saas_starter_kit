@@ -8,6 +8,7 @@ from django.conf import settings
 from rest_framework.views import APIView
 from django.core.exceptions import ObjectDoesNotExist
 
+from accounts.utlis.check_user import has_pro_access
 from .serializers import PostSerializer
 from django.db.models import Max
 from .models import generate_encrypted_secret
@@ -159,6 +160,14 @@ class PostView(APIView):
 
         post_id = request.query_params.get("id")
         post = get_object_or_404(Post, id=post_id, organization=organization, is_deleted=False)
+
+        if request.data.get("scheduled_publish_time"):
+            # Restrict organization creation to PRO users
+            if not has_pro_access(request.user):
+                return Response({
+                    "error": "Permission denied",
+                    "message": "You need a Pro reshudele post."
+                }, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():

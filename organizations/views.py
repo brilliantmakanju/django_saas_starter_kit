@@ -2,6 +2,7 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.utlis.check_user import has_pro_access
 from core.utlis import is_organization_owner_or_admin
 from django.contrib.auth import get_user_model
 
@@ -27,6 +28,15 @@ class OrganizationView(APIView):
            - `message`: Success message.
            - `organization`: Created organization details.
        """
+        user = request.user
+
+        # Restrict organization creation to PRO users
+        if not has_pro_access(user):
+            return Response({
+                "error": "Permission denied",
+                "message": "You need a Pro subscription to create an organization."
+            }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = OrganizationSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             # Save organization and related domain
@@ -480,6 +490,13 @@ class UpdateToneSettingsView(APIView):
         if not is_organization_owner_or_admin(request.user, organization):
             return Response({'message': 'You are not authorized to update tone settings.'},
                             status=status.HTTP_403_FORBIDDEN)
+
+        # Restrict organization creation to PRO users
+        if not has_pro_access(request.user):
+            return Response({
+                "error": "Permission denied",
+                "message": "You need a Pro subscription to add or update ai tones."
+            }, status=status.HTTP_403_FORBIDDEN)
 
         # Validate and update tone settings
         tone = request.data.get('selected_tone')

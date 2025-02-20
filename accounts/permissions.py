@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
 from django_tenants.utils import get_tenant_model
+from accounts.models import UserAccount
 from organizations.models import UserOrganizationRole
 
 
@@ -46,3 +47,14 @@ class TenantAccessPermission(BasePermission):
 
         # If all checks pass, return True
         return True
+
+
+
+class IsProUser(BasePermission):
+    """
+    Allows access only to users with an active 'pro' subscription.
+    """
+
+    def has_permission(self, request, view):
+        user = request.user
+        return user.is_authenticated and user.plan == UserAccount.PRO and user.has_active_subscription()

@@ -172,9 +172,6 @@ class UserLoginSerializer(serializers.ModelSerializer):
         )
 
 class CreateSubscriptionSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=100)
-    email = serializers.EmailField()
-    payment_method = serializers.CharField(max_length=255)
     price_id = serializers.CharField(max_length=255)
     plan_id = serializers.CharField(max_length=255)
 
@@ -190,6 +187,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     stripe_subscription_id = serializers.CharField(allow_blank=True, read_only=True)
     github_connected = serializers.BooleanField(read_only=True)
     google_connected = serializers.BooleanField(read_only=True)
+    plan = serializers.BooleanField(read_only=True)
+    subscription_status = serializers.BooleanField(read_only=True)
+    subscription_end_date = serializers.BooleanField(read_only=True)
 
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -251,6 +251,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'stripe_subscription_id': user.stripe_subscription_id,
             'github_connected': user.github_connected,
             'google_connected': user.google_connected,
+            'plan': user.plan,
+            'subscription_status': user.subscription_status,
+            'subscription_end_date': user.subscription_end_date,
         })
 
         return data
