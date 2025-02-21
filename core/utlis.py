@@ -1,6 +1,6 @@
 from organizations.models import UserOrganizationRole
 from django.core.exceptions import PermissionDenied
-import os
+import os, json
 from django.conf import settings
 from openai import OpenAI
 from django.shortcuts import get_object_or_404
@@ -24,13 +24,19 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         secret_key (str): The secret key to identify the organization via the Webhook model.
         formatted_posts (dict): The formatted posts data containing Twitter and LinkedIn posts.
     """
+    print(f"🔑 Secret Key Received: {secret_key}")
+    print(f"📩 Formatted Posts Data: {json.dumps(formatted_posts, indent=2)}")  # Pretty-print the JSON data
+
     # Get the Webhook and associated organization using the secret key
     webhook = get_object_or_404(Webhook, private_secret=secret_key)
     organization = webhook.organization
+    print(f"🏢 Organization Retrieved: {organization.name} (ID: {organization.id})")
 
     # Extract Twitter and LinkedIn posts
     twitter_posts = formatted_posts.get('twitter_posts', [])
     linkedin_posts = formatted_posts.get('linkedin_posts', [])
+    print(f"🐦 Twitter Posts Extracted: {twitter_posts}")
+    print(f"🔗 LinkedIn Posts Extracted: {linkedin_posts}")
 
     # Helper function to extract individual posts from the grouped list
     def extract_posts(posts):
@@ -54,13 +60,17 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
     # Extract individual Twitter and LinkedIn posts
     twitter_posts_cleaned = extract_posts(twitter_posts)
     linkedin_posts_cleaned = extract_posts(linkedin_posts)
+    print(f"✅ Cleaned Twitter Posts: {twitter_posts_cleaned}")
+    print(f"✅ Cleaned LinkedIn Posts: {linkedin_posts_cleaned}")
 
     # Combine all posts with platform information
     all_posts = [
-        {"content": post, "platform": "twitter"} for post in twitter_posts_cleaned
-    ] + [
-        {"content": post, "platform": "linkedin"} for post in linkedin_posts_cleaned
-    ]
+                    {"content": post, "platform": "twitter"} for post in twitter_posts_cleaned
+                ] + [
+                    {"content": post, "platform": "linkedin"} for post in linkedin_posts_cleaned
+                ]
+
+    print(f"📜 All Posts to Create: {json.dumps(all_posts, indent=2)}")
 
     # Create a PostGroup to group all the posts
     post_group = PostGroup.objects.create(
@@ -68,9 +78,11 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         name=f"Generated Posts Group for {organization.name}",  # Explicit name tied to the organization
         description="Group for AI-generated posts."
     )
+    print(f"📌 Created PostGroup: {post_group.name} (ID: {post_group.id})")
 
     # Set default scheduling delay (e.g., 15 minutes) for all posts
     scheduled_publish_time = timezone.now() + timedelta(minutes=15)
+    print(f"🕒 Scheduled Publish Time: {scheduled_publish_time}")
 
     # Create Post objects for each post and associate them with the PostGroup
     created_posts = []
@@ -79,23 +91,98 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
             organization=organization,
             content=post_data["content"],
             platform=post_data["platform"],
-            post_group=post_group , # Associate the post with the group
+            # post_group=post_group , # Associate the post with the group
             scheduled_publish_time=scheduled_publish_time,  # Set the scheduled time for publishing
             actual_publish_time=None,  # Set actual publish time to None initially
         )
         created_posts.append(post)
-        print(f"Created Post: {post} with ID {post.id}")
+        print(f"📝 Created Post: {post.content[:50]}... (ID: {post.id}, Platform: {post.platform})")
 
-    print(f"Total posts created: {len(created_posts)}")
+    print(f"🎯 Total Posts Created: {len(created_posts)}")
 
     # Send notification with the relevant email template
-    create_and_notify(
+    notification_result = create_and_notify(
         organization,
         title="New Post Created",
         message="A new post draft has been created and is ready for review.",
         triggered_by=None,
         template_path='emails/notification_email_draft.html'  # Or change to published template
     )
+
+    print(f"📢 Notification Sent: {notification_result}")
+
+    # # Get the Webhook and associated organization using the secret key
+    # webhook = get_object_or_404(Webhook, private_secret=secret_key)
+    # organization = webhook.organization
+    #
+    # # Extract Twitter and LinkedIn posts
+    # twitter_posts = formatted_posts.get('twitter_posts', [])
+    # linkedin_posts = formatted_posts.get('linkedin_posts', [])
+    #
+    # # Helper function to extract individual posts from the grouped list
+    # def extract_posts(posts):
+    #     extracted = []
+    #     current_post = None
+    #
+    #     for line in posts:
+    #         # Detecting new post headers
+    #         if "Twitter Post" in line or "LinkedIn Post" in line:
+    #             if current_post:
+    #                 extracted.append(current_post.strip())
+    #             current_post = ""
+    #         else:
+    #             current_post = f"{current_post} {line}".strip() if current_post else line.strip()
+    #
+    #     if current_post:
+    #         extracted.append(current_post.strip())
+    #
+    #     return extracted
+    #
+    # # Extract individual Twitter and LinkedIn posts
+    # twitter_posts_cleaned = extract_posts(twitter_posts)
+    # linkedin_posts_cleaned = extract_posts(linkedin_posts)
+    #
+    # # Combine all posts with platform information
+    # all_posts = [
+    #     {"content": post, "platform": "twitter"} for post in twitter_posts_cleaned
+    # ] + [
+    #     {"content": post, "platform": "linkedin"} for post in linkedin_posts_cleaned
+    # ]
+    #
+    # # Create a PostGroup to group all the posts
+    # post_group = PostGroup.objects.create(
+    #     organization=organization,
+    #     name=f"Generated Posts Group for {organization.name}",  # Explicit name tied to the organization
+    #     description="Group for AI-generated posts."
+    # )
+    #
+    # # Set default scheduling delay (e.g., 15 minutes) for all posts
+    # scheduled_publish_time = timezone.now() + timedelta(minutes=15)
+    #
+    # # Create Post objects for each post and associate them with the PostGroup
+    # created_posts = []
+    # for post_data in all_posts:
+    #     post = Post.objects.create(
+    #         organization=organization,
+    #         content=post_data["content"],
+    #         platform=post_data["platform"],
+    #         post_group=post_group , # Associate the post with the group
+    #         scheduled_publish_time=scheduled_publish_time,  # Set the scheduled time for publishing
+    #         actual_publish_time=None,  # Set actual publish time to None initially
+    #     )
+    #     created_posts.append(post)
+    #     print(f"Created Post: {post} with ID {post.id}")
+    #
+    # print(f"Total posts created: {len(created_posts)}")
+    #
+    # # Send notification with the relevant email template
+    # create_and_notify(
+    #     organization,
+    #     title="New Post Created",
+    #     message="A new post draft has been created and is ready for review.",
+    #     triggered_by=None,
+    #     template_path='emails/notification_email_draft.html'  # Or change to published template
+    # )
 
     return created_posts, post_group
 
@@ -177,6 +264,7 @@ def generate_post_with_ai(commits, tone, secret_key):
 
         # Create posts
         created_posts = create_posts_from_formatted_data(secret_key, formatted_posts)
+        print(created_posts, "Created Posts")
 
         # Output the created posts for verification
         for post in created_posts:
