@@ -6,10 +6,11 @@ from notifications.utlis import create_and_notify
 from organizations.models import Organization
 from celery import shared_task
 from background_task import background
+from apscheduler.schedulers.background import BackgroundScheduler
 from core.utlis import select_post_to_publish, delete_other_posts, select_linkedin_post_to_publish
 
 # @shared_task
-@background(schedule=60)  # Runs every 1 minute
+# @background(schedule=60)  # Runs every 1 minute
 def publish_pending_post():
     """
     This task checks for all posts that are in the 'draft' or 'scheduled' state,
@@ -134,3 +135,10 @@ def publish_pending_post():
         print("Finished checking for posts to publish.")
     except Exception as e:
         print(f"Error while accessing tenants or posts: {e}")
+
+
+
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(publish_pending_post, "interval", minutes=1)  # Runs every 1 minute
+    scheduler.start()

@@ -84,7 +84,7 @@ SHARED_APPS = [
     'background_task',
     'sesame',
     'django_celery_beat',
-    'django_celery_results',
+
 
     'accounts',
     'organizations',
