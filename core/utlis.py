@@ -81,8 +81,10 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
     print(f"📌 Created PostGroup: {post_group.name} (ID: {post_group.id})")
 
     # Set default scheduling delay (e.g., 15 minutes) for all posts
-    scheduled_publish_time = timezone.now() + timedelta(minutes=15)
-    print(f"🕒 Scheduled Publish Time: {scheduled_publish_time}")
+    # scheduled_publish_time = timezone.now() + timedelta(minutes=15)
+    # print(f"🕒 Scheduled Publish Time: {scheduled_publish_time}")
+    scheduled_publish_time = timezone.now()
+    print(f"🕒 Scheduled Publish Time (Test Default): {scheduled_publish_time}")
 
     # Create Post objects for each post and associate them with the PostGroup
     created_posts = []
