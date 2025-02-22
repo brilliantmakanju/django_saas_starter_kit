@@ -268,9 +268,9 @@ def generate_post_with_ai(commits, tone, secret_key):
         created_posts = create_posts_from_formatted_data(secret_key, formatted_posts)
         print(created_posts, "Created Posts")
 
-        # Output the created posts for verification
-        for post in created_posts:
-            print(f"Post ID: {post.id}, Platform: {post.platform}, Content: {post.content}")
+        # # Output the created posts for verification
+        # for post in created_posts:
+        #     print(f"Post ID: {post.id}, Platform: {post.platform}, Content: {post.content}")
 
         # Return the final generated content
         return created_posts
