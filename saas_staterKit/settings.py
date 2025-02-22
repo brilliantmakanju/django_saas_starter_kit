@@ -149,42 +149,42 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'saas_staterKit.wsgi.application'
 
-# Redis Configuration
-REDIS_USER = os.getenv("REDISUSER", "default")
-REDIS_PASSWORD = os.getenv("REDISPASSWORD", "")
-REDIS_HOST = os.getenv("REDISHOST", "redis")
-REDIS_PORT = os.getenv("REDISPORT", "6379")
-
-# Prevent empty password from breaking Redis URL
-REDIS_AUTH = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
-REDIS_URL = f"redis://{REDIS_AUTH}{REDIS_HOST}:{REDIS_PORT}"
-
-# Celery Configuration
-CELERY_BROKER_URL = "redis://localhost:6379/0" if DEBUG else REDIS_URL
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)  # Ensure proper default
-CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER", "django_celery_beat.schedulers.DatabaseScheduler")
-
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-# Celery Beat Task Scheduling
-CELERY_BEAT_SCHEDULE = {
-    'publish_pending_posts': {
-        'task': 'core.tasks.publish_pending_post',
-        'schedule': crontab(minute='*/1'),  # Runs every minute
-    },
-}
-
-# Redis Caching (Only for Production)
-if not DEBUG:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.redis.RedisCache",
-            "LOCATION": REDIS_URL,
-        }
-    }
+# # Redis Configuration
+# REDIS_USER = os.getenv("REDISUSER", "default")
+# REDIS_PASSWORD = os.getenv("REDISPASSWORD", "")
+# REDIS_HOST = os.getenv("REDISHOST", "redis")
+# REDIS_PORT = os.getenv("REDISPORT", "6379")
+#
+# # Prevent empty password from breaking Redis URL
+# REDIS_AUTH = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
+# REDIS_URL = f"redis://{REDIS_AUTH}{REDIS_HOST}:{REDIS_PORT}"
+#
+# # Celery Configuration
+# CELERY_BROKER_URL = "redis://localhost:6379/0" if DEBUG else REDIS_URL
+# CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)  # Ensure proper default
+# CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER", "django_celery_beat.schedulers.DatabaseScheduler")
+#
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'UTC'
+# CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+#
+# # Celery Beat Task Scheduling
+# CELERY_BEAT_SCHEDULE = {
+#     'publish_pending_posts': {
+#         'task': 'core.tasks.publish_pending_post',
+#         'schedule': crontab(minute='*/1'),  # Runs every minute
+#     },
+# }
+#
+# # Redis Caching (Only for Production)
+# if not DEBUG:
+#     CACHES = {
+#         "default": {
+#             "BACKEND": "django.core.cache.backends.redis.RedisCache",
+#             "LOCATION": REDIS_URL,
+#         }
+#     }
 
 
 
