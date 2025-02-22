@@ -139,6 +139,8 @@ def publish_pending_post():
 
 
 def start_scheduler():
+    from django.core.management import call_command  # Import here to prevent premature Django access
+
     scheduler = BackgroundScheduler()
-    scheduler.add_job(publish_pending_post, "interval", minutes=1)  # Runs every 1 minute
+    scheduler.add_job(publish_pending_post, 'interval', minutes=1)
     scheduler.start()
