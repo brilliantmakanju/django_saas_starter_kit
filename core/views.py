@@ -12,7 +12,7 @@ from accounts.utlis.check_user import has_pro_access
 from .serializers import PostSerializer
 from django.db.models import Max
 from .models import generate_encrypted_secret
-from organizations.models import Organization
+from organizations.models import Organization, UserOrganizationRole
 from .models import Webhook, Post, PostGroup
 from django.core.mail import send_mail
 from django.core.exceptions import PermissionDenied
@@ -294,11 +294,27 @@ class GitHubWebhookView(CsrfExemptMixin, View):
         if not organization:
             return JsonResponse({'error': 'Organization not found.'}, status=404)
 
+        # **NEW: Retrieve the organization owner**
+        try:
+            owner = UserOrganizationRole.objects.get(organization=organization, role='owner').user
+        except UserOrganizationRole.DoesNotExist:
+            return JsonResponse({'error': 'Organization owner not found.'}, status=403)
+
+        # Count published posts in the organization
+        published_posts_count = Post.objects.filter(
+            organization=self.organization
+        ).count()
+
+        # **NEW: Check if the owner is on the free plan and has 5+ published posts**
+        if has_pro_access(owner) is False and published_posts_count >= 5:
+            return JsonResponse({'error': 'Post limit reached for free plan.'}, status=403)
+
         # Check if the organization has platform(s) enabled and generate webhook details
         if not organization.can_generate_webhook():
             return JsonResponse({
                 "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
             }, status=403)
+
 
         secret_key = request.GET.get('secret_key', '')
         if not secret_key:
