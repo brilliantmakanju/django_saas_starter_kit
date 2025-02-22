@@ -4,6 +4,6 @@
         "builder": "NIXPACKS"
     },
     "deploy": {
-        "startCommand": "python3 manage.py makemigrations && python3 manage.py migrate && python3 manage.py create_superuser && python3 manage.py collectstatic --noinput && gunicorn saas_staterKit.wsgi && celery -A saas_staterKit worker -E -I info && celery -A saas_staterKit beat -I info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+        "startCommand": "python3 manage.py makemigrations && python3 manage.py migrate && python3 manage.py create_superuser && python3 manage.py collectstatic --noinput && gunicorn saas_staterKit.wsgi && python3 manage.py process_tasks"
     }
 }

@@ -5,9 +5,11 @@ from accounts.social_service import post_tweet, post_linkedin_update
 from notifications.utlis import create_and_notify
 from organizations.models import Organization
 from celery import shared_task
+from background_task import background
 from core.utlis import select_post_to_publish, delete_other_posts, select_linkedin_post_to_publish
 
-@shared_task
+# @shared_task
+@background(schedule=60)  # Runs every 1 minute
 def publish_pending_post():
     """
     This task checks for all posts that are in the 'draft' or 'scheduled' state,
