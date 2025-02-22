@@ -148,11 +148,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'saas_staterKit.wsgi.application'
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis URL for the broker
+if DEBUG:
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis URL for the broker
+else:
+    CELERY_BROKER_URL = os.getenv("REDIS_PRODUCTION_URL_HREF")  # Redis URL for the broker
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Database
 # Use this configuration to connect to a PostgreSQL database.
