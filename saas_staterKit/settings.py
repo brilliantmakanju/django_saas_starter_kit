@@ -148,16 +148,46 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'saas_staterKit.wsgi.application'
 
+# REDIS CONFIG
+REDIS_USER = os.getenv("REDISUSER", "default")
+REDIS_PASSWORD = os.getenv("REDISPASSWORD", "")
+REDIS_HOST = os.getenv("REDISHOST", "redis")
+REDIS_PORT = os.getenv("REDISPORT", "6379")
+
+REDIS_URL = f"redis://{REDIS_USER}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
+
+# CELERY CONFIG
 if DEBUG:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis URL for the broker
+    CELERY_BROKER_URL = "redis://localhost:6379/0"  # Redis URL for the broker in dev
 else:
-    CELERY_BROKER_URL = os.getenv("REDIS_PRODUCTION_URL_HREF")  # Redis URL for the broker
+    CELERY_BROKER_URL = REDIS_URL  # Use production Redis URL or fallback
+
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
+CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER", "django_celery_beat.schedulers.DatabaseScheduler")
+
+
+# if DEBUG:
+#     CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis URL for the broker
+# else:
+#     CELERY_BROKER_URL = os.getenv("REDIS_PRODUCTION_URL_HREF")  # Redis URL for the broker
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+
+if not DEBUG:
+    # REDIS CACHE CONFIG
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+
+
 
 # Database
 # Use this configuration to connect to a PostgreSQL database.
@@ -170,6 +200,7 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),   # PostgreSQL user password
         'HOST': os.getenv('DB_HOST', 'localhost'),              # Database server host (localhost for local dev)
         'PORT': os.getenv('DB_PORT', '5432'),                   # Default PostgreSQL port
+        'CONN_MAX_AGE': 60,
     }
 }
 
