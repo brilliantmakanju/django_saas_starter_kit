@@ -498,11 +498,10 @@ class UpdateToneSettingsView(APIView):
                 "message": "You need a Pro subscription to add or update ai tones."
             }, status=status.HTTP_403_FORBIDDEN)
 
+
         # Validate and update tone settings
         tone = request.data.get('selected_tone')
         shuffle = request.data.get('shuffle_tones', False)
-        print(tone, "Tones Selected")
-        print(shuffle, "Shuffle tone")
 
         if tone:
             # If tone is a list, validate each tone and join them into a comma-separated string

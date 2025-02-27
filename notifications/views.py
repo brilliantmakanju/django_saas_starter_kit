@@ -79,6 +79,29 @@ class UnreadNotificationCheckView(APIView):
 
         return Response({"has_unread": unread_notifications}, status=status.HTTP_200_OK)
 
+
+class RecentNotificationsView(APIView):
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
+
+    def get(self, request):
+        """
+        Fetch the 5 most recent notifications for the organization.
+        """
+        organization = getattr(request, 'organization', None)
+        if not organization:
+            return Response({"error": "Organization context not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch only the 5 most recent notifications
+        recent_notifications = Notification.objects.filter(organization=organization).order_by('-created_at')[:5]
+
+        # Serialize the notifications
+        serializer = NotificationSerializer(recent_notifications, many=True, context={'request': request})
+
+        return Response({
+            "notifications": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
 # def create_notification(organization, title, message, triggered_by, related_object=None):
 #     """
 #     Utility function to create a new notification.

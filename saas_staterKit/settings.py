@@ -294,33 +294,39 @@ EMAIL_USE_TLS = True
 
 REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
+
+    # Throttling (Rate Limiting)
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "50/minute",  # Rate limit for authenticated users (by user ID)
+        "anon": "20/minute",  # Rate limit for unauthenticated users (by IP)
+    },
 
+    # Filtering and Searching
     "DEFAULT_FILTER_BACKENDS": (
         # "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.OrderingFilter",
         "rest_framework.filters.SearchFilter",
     ),
-    "DEFAULT_THROTTLING_CLASSES": (
-        "rest_framework.throttling.UserRateThrottle",
-    ),
-    "DEFAULT_THROTTLE_RATES": {
-        'user': '50/minute',
-        'anon':  '50/minute'
-    },
+
+    # Pagination
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 30,
+
+    # Permissions
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
 
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',  # django-oauth-toolkit >= 1.0.0
-        'rest_framework_social_oauth2.authentication.SocialAuthentication',
+    # Authentication Methods
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",  # django-oauth-toolkit >= 1.0.0
+        "rest_framework_social_oauth2.authentication.SocialAuthentication",
     ),
 }
+
 
 CSRF_COOKIE_SECURE = True
 
@@ -428,4 +434,20 @@ LOGOUT_REDIRECT_URL = '/'
 # Social Auth Settings
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
+import sentry_sdk
 
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN", ""),
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    _experiments={
+        # Set continuous_profiling_auto_start to True
+        # to automatically start the profiler on when
+        # possible.
+        "continuous_profiling_auto_start": True,
+    },
+)

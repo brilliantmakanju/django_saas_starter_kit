@@ -27,6 +27,11 @@ from accounts.utlis.utlis import is_organization_owner
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import now
+from datetime import timedelta
+from django.db.models import Count
+
+
 
 
 logger = logging.getLogger(__name__)
@@ -174,6 +179,10 @@ class PostView(APIView):
             serializer.save()
             post.is_edited = True
             post.priority = True
+            # If scheduled_publish_time exists, set status to "scheduled"
+            if request.data.get("scheduled_publish_time"):
+                post.status = Post.Status.SCHEDULED
+
             post.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -673,6 +682,78 @@ class GetOrganizationWebhookView(APIView):
             return Response({'message': 'No webhook found for this organization.'}, status=status.HTTP_404_NOT_FOUND)
 
 
+class OrganizationDashboardView(APIView):
+    """
+    API View to retrieve dashboard statistics for an organization.
+    Provides insights into scheduled posts, generated posts, platform usage,
+    and content type distribution over the last 7 days.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        GET method to fetch dashboard statistics for an organization.
+
+        Returns:
+            - Number of scheduled posts in the last 7 days
+            - Number of posts generated in the last 7 days
+        """
+        # Retrieve the authenticated user's organization
+        organization = getattr(request, 'organization', None)
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Define the timeframe (last 7 days)
+        last_7_days = now() - timedelta(days=7)
+
+        # Count of scheduled posts in the last 7 days
+        scheduled_posts_count = Post.objects.filter(
+            organization=organization, status=Post.Status.SCHEDULED,
+            scheduled_publish_time__gte=last_7_days
+        ).count()
+
+        # Count of posts generated in the last 7 days
+        generated_posts_count = Post.objects.filter(
+            organization=organization, created_at__gte=last_7_days
+        ).count()
+
+        # Construct the response data
+        data = {
+            "scheduled_posts_count": scheduled_posts_count,  # Number of scheduled posts
+            "generated_posts_count": generated_posts_count,  # Number of generated posts
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 
+class UpcomingPosts(APIView):
+    permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve all posts for the organization, grouped and ungrouped.
+        """
+        organization = getattr(request, 'organization', None)
+
+        if not organization:
+            return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Only the organization owner can add or update team members
+        if not is_organization_owner(request.user, organization):
+            return Response({'message': 'You are not authorized to get post in this organization.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+            # Fetch posts and separate grouped/ungrouped
+
+        # Fetch only the first 5 scheduled posts
+        scheduled_posts = Post.objects.filter(
+            organization=organization,
+            is_deleted=False,
+            status="scheduled"
+        ).order_by('-created_at')[:5]
+
+        # Serialize the posts
+        serialized_posts = PostSerializer(scheduled_posts, many=True).data
+
+        return Response(serialized_posts, status=status.HTTP_200_OK)

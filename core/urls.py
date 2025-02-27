@@ -5,7 +5,9 @@ from .views import (
     GetOrganizationWebhookView,
     PostView,
     PostGroupView,
-    UpdateWebhookSettingsView  # New endpoint for updating webhook settings (branch and repo)
+    UpdateWebhookSettingsView,  # Endpoint for updating webhook settings (branch and repo)
+    OrganizationDashboardView,  # New endpoint for retrieving organization dashboard statistics
+    UpcomingPosts
 )
 
 urlpatterns = [
@@ -26,4 +28,9 @@ urlpatterns = [
 
     # PostGroupView: Manage Post Groups, Retrieve all posts in a group, Clear trash
     path('posts/groups/', PostGroupView.as_view(), name='post_groups'),
+
+    # Organization Dashboard: Retrieve analytics and insights for the organization
+    path('dashboard/', OrganizationDashboardView.as_view(), name='organization_dashboard'),
+    path('upcoming/', UpcomingPosts.as_view(), name='upcoming_post'),
+
 ]
