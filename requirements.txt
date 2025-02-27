@@ -56,8 +56,8 @@ prompt_toolkit==3.0.48
 psycopg==3.2.4
 psycopg2-binary==2.9.10
 pycparser==2.22
-pydantic==2.10.5
 pydantic_core==2.27.2
+pygraphviz==1.14
 PyJWT==2.10.1
 python-crontab==3.2.0
 python-dateutil==2.9.0.post0
@@ -68,6 +68,7 @@ PyTweet==1.3.6
 redis==3.5.3
 requests==2.32.3
 requests-oauthlib==1.3.1
+sentry-sdk==2.22.0
 setuptools==75.8.0
 six==1.17.0
 sniffio==1.3.1
