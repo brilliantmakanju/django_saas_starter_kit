@@ -50,7 +50,7 @@ from accounts.utlis.utlis import send_email
 from sesame.utils import get_user as sesame_get_user
 
 # Load environment variables
-
+from datetime import timedelta
 
 load_dotenv()
 
@@ -133,8 +133,14 @@ def handle_checkout_completed(data):
         user.stripe_subscription_id = customer_id
         user.subscription_status = "active"
         user.subscription_start_date = timezone.now()
-        user.subscription_end_date = None  # Remove previous end date if reactivated
-        user.plan = plan.name  # Update user plan (basic/pro)
+        if plan.name.lower() == "ltd":  # Check if the plan is the lifetime plan
+            user.subscription_end_date = timezone.now() + timedelta(days=365 * 999)  # 999 years
+        else:
+            user.subscription_end_date = None  # For monthly/annual plans
+
+        user.plan = plan.name  # Update user plan (basic/pro/ltd)
+        user.save()
+        user.plan = plan.name  # Update user plan (basic/pro/ltd)
         user.save()
 
         logger.info(f"Subscription activated for user {user.email}, assigned plan: {plan.name}")
@@ -156,21 +162,6 @@ def handle_payment_success(data):
         logger.info(f"Subscription renewed for user {user.email}")
     except ObjectDoesNotExist:
         logger.warning(f"User not found for successful invoice payment: {customer_id}")
-
-def handle_payment_failure(data):
-    """ Handles failed subscription payments (user might need to update payment details) """
-    customer_id = data.get("customer")
-    if not customer_id:
-        logger.error("Missing customer_id in invoice.payment_failed")
-        return
-
-    try:
-        user = UserAccount.objects.get(stripe_subscription_id=customer_id)
-        user.subscription_status = "payment_failed"
-        user.save()
-        logger.warning(f"Subscription payment failed for user {user.email}")
-    except ObjectDoesNotExist:
-        logger.warning(f"User not found for failed payment: {customer_id}")
 
 def handle_subscription_update(data):
     """ Handles subscription plan changes or updates """
@@ -196,6 +187,21 @@ def handle_subscription_update(data):
         logger.info(f"Subscription updated for user {user.email}, new status: {status}, new plan: {plan.name}")
     except ObjectDoesNotExist:
         logger.warning(f"User not found for subscription update: {customer_id}")
+
+def handle_payment_failure(data):
+    """ Handles failed subscription payments (user might need to update payment details) """
+    customer_id = data.get("customer")
+    if not customer_id:
+        logger.error("Missing customer_id in invoice.payment_failed")
+        return
+
+    try:
+        user = UserAccount.objects.get(stripe_subscription_id=customer_id)
+        user.subscription_status = "payment_failed"
+        user.save()
+        logger.warning(f"Subscription payment failed for user {user.email}")
+    except ObjectDoesNotExist:
+        logger.warning(f"User not found for failed payment: {customer_id}")
 
 def handle_subscription_cancel(data):
     """ Handles subscription cancellations """
@@ -524,20 +530,24 @@ class CreateSubscriptionAPIView(APIView):
             logger.error(f"Stripe error retrieving/creating customer: {e}")
             raise
 
-    def create_checkout_session(self, customer_id, price_id, user):
+    def create_checkout_session(self, customer_id, price_id, plan_id, user):
         """
         Create a Stripe Checkout session and return the session URL.
         """
         try:
+            # Determine the checkout mode based on the plan type
+            mode = "payment" if plan_id.lower() == "ltd_plan_id" else "subscription"
+
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
                 line_items=[{"price": price_id, "quantity": 1}],
-                mode="subscription",
+                mode=mode,
                 success_url=f"{settings.FRONTEND_DOMAIN}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{settings.FRONTEND_DOMAIN}/payment-cancelled",
-                metadata={"user_id": user.id, "price_id": price_id},
+                metadata={"user_id": user.id, "price_id": price_id, "plan_id": plan_id},
             )
+
             logger.info(f"Checkout session created: {session['id']}")
             return session.url
         except stripe.error.StripeError as e:
@@ -562,10 +572,12 @@ class CreateSubscriptionAPIView(APIView):
 
         data = serializer.validated_data
         price_id = data["price_id"]
+        plan_id = data["plan_id"]
+        print(plan_id, "Plan Id pricing")
 
         try:
             customer = self.get_or_create_customer(user)
-            checkout_url = self.create_checkout_session(customer["id"], price_id, user)
+            checkout_url = self.create_checkout_session(customer["id"], price_id, plan_id, user)
 
             return Response({"checkout_url": checkout_url}, status=status.HTTP_201_CREATED)
 

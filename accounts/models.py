@@ -22,12 +22,14 @@ class UserAccountManager(BaseUserManager):
 
 class UserAccount(AbstractBaseUser, PermissionsMixin):
 
-        BASIC = 'basic'
+        BASIC = "basic"
         PRO = "pro"
+        LTD = "ltd"
 
         CHOICES_PLANS = (
             (BASIC, "basic"),
             (PRO, "pro"),
+            (LTD, "ltd"),
         )
 
         id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -100,8 +102,8 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
                 self.subscription_status = "canceled"
                 self.plan = UserAccount.BASIC
 
-            # if self.subscription_status == "canceled" and self.subscription_end_date and self.subscription_end_date < timezone.now():
-            #     self.plan = UserAccount.BASIC  # Revert to basic plan
+            if self.subscription_status == "canceled" and self.subscription_end_date and self.subscription_end_date < timezone.now():
+                self.plan = UserAccount.BASIC  # Revert to basic plan
 
             self.save(update_fields=["subscription_status", "plan"])
 
@@ -109,16 +111,18 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
 class SubscriptionPlan(models.Model):
     BASIC = "basic"
     PRO = "pro"
+    LTD = "ltd"
 
     CHOICES_PLANS = (
         (BASIC, "basic"),
         (PRO, "pro"),
+        (LTD, "ltd"),
     )
 
-    name = models.CharField(max_length=50, choices=CHOICES_PLANS, unique=True)
+    name = models.CharField(max_length=50, choices=CHOICES_PLANS)
     stripe_price_id = models.CharField(max_length=255, unique=True)  # Price ID from Stripe
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.get_name_display()} ({self.stripe_price_id})"
+        return f"{self.get_name_display()} ({self.stripe_price_id}) ({self.description})"
