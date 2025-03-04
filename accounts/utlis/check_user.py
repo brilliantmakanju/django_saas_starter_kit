@@ -20,4 +20,7 @@ def has_pro_access(user):
     # Update the subscription status (this refreshes the model in case of webhook updates)
     user.update_subscription_status()
 
-    return user.plan == UserAccount.PRO and user.has_active_subscription()
+    return (
+            (user.plan in [UserAccount.PRO, UserAccount.LTD])
+            and user.has_active_subscription()
+    )
