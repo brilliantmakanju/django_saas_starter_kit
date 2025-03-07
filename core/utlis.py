@@ -24,19 +24,19 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         secret_key (str): The secret key to identify the organization via the Webhook model.
         formatted_posts (dict): The formatted posts data containing Twitter and LinkedIn posts.
     """
-    print(f"🔑 Secret Key Received: {secret_key}")
-    print(f"📩 Formatted Posts Data: {json.dumps(formatted_posts, indent=2)}")  # Pretty-print the JSON data
+    # print(f"🔑 Secret Key Received: {secret_key}")
+    # print(f"📩 Formatted Posts Data: {json.dumps(formatted_posts, indent=2)}")  # Pretty-print the JSON data
 
     # Get the Webhook and associated organization using the secret key
     webhook = get_object_or_404(Webhook, private_secret=secret_key)
     organization = webhook.organization
-    print(f"🏢 Organization Retrieved: {organization.name} (ID: {organization.id})")
+    # print(f"🏢 Organization Retrieved: {organization.name} (ID: {organization.id})")
 
     # Extract Twitter and LinkedIn posts
     twitter_posts = formatted_posts.get('twitter_posts', [])
     linkedin_posts = formatted_posts.get('linkedin_posts', [])
-    print(f"🐦 Twitter Posts Extracted: {twitter_posts}")
-    print(f"🔗 LinkedIn Posts Extracted: {linkedin_posts}")
+    # print(f"🐦 Twitter Posts Extracted: {twitter_posts}")
+    # print(f"🔗 LinkedIn Posts Extracted: {linkedin_posts}")
 
     # Helper function to extract individual posts from the grouped list
     def extract_posts(posts):
@@ -60,8 +60,8 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
     # Extract individual Twitter and LinkedIn posts
     twitter_posts_cleaned = extract_posts(twitter_posts)
     linkedin_posts_cleaned = extract_posts(linkedin_posts)
-    print(f"✅ Cleaned Twitter Posts: {twitter_posts_cleaned}")
-    print(f"✅ Cleaned LinkedIn Posts: {linkedin_posts_cleaned}")
+    # print(f"✅ Cleaned Twitter Posts: {twitter_posts_cleaned}")
+    # print(f"✅ Cleaned LinkedIn Posts: {linkedin_posts_cleaned}")
 
     # Combine all posts with platform information
     all_posts = [
@@ -70,7 +70,7 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
                     {"content": post, "platform": "linkedin"} for post in linkedin_posts_cleaned
                 ]
 
-    print(f"📜 All Posts to Create: {json.dumps(all_posts, indent=2)}")
+    # print(f"📜 All Posts to Create: {json.dumps(all_posts, indent=2)}")
 
     # Create a PostGroup to group all the posts
     post_group = PostGroup.objects.create(
@@ -78,11 +78,11 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         name=f"Generated Posts Group for {organization.name}",  # Explicit name tied to the organization
         description="Group for AI-generated posts."
     )
-    print(f"📌 Created PostGroup: {post_group.name} (ID: {post_group.id})")
+    # print(f"📌 Created PostGroup: {post_group.name} (ID: {post_group.id})")
 
     # Set default scheduling delay (e.g., 15 minutes) for all posts
     scheduled_publish_time = timezone.now() + timedelta(minutes=15)
-    print(f"🕒 Scheduled Publish Time: {scheduled_publish_time}")
+    # print(f"🕒 Scheduled Publish Time: {scheduled_publish_time}")
     # scheduled_publish_time = timezone.now()
     # print(f"🕒 Scheduled Publish Time (Test Default): {scheduled_publish_time}")
 
@@ -98,9 +98,9 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
             actual_publish_time=None,  # Set actual publish time to None initially
         )
         created_posts.append(post)
-        print(f"📝 Created Post: {post.content[:50]}... (ID: {post.id}, Platform: {post.platform})")
-
-    print(f"🎯 Total Posts Created: {len(created_posts)}")
+    #     print(f"📝 Created Post: {post.content[:50]}... (ID: {post.id}, Platform: {post.platform})")
+    #
+    # print(f"🎯 Total Posts Created: {len(created_posts)}")
 
     # Send notification with the relevant email template
     notification_result = create_and_notify(
@@ -111,7 +111,7 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         template_path='emails/notification_email_draft.html'  # Or change to published template
     )
 
-    print(f"📢 Notification Sent: {notification_result}")
+    # print(f"📢 Notification Sent: {notification_result}")
 
     # # Get the Webhook and associated organization using the secret key
     # webhook = get_object_or_404(Webhook, private_secret=secret_key)
@@ -262,11 +262,11 @@ def generate_post_with_ai(commits, tone, secret_key):
 
         # Format the posts
         formatted_posts = format_ai_posts(generated_content)
-        print(formatted_posts)
+        # print(formatted_posts)
 
         # Create posts
         created_posts = create_posts_from_formatted_data(secret_key, formatted_posts)
-        print(created_posts, "Created Posts")
+        # print(created_posts, "Created Posts")
 
         # # Output the created posts for verification
         # for post in created_posts:
@@ -277,7 +277,7 @@ def generate_post_with_ai(commits, tone, secret_key):
 
     except Exception as e:
         # Print any errors that occur during the AI request
-        print(f"Error generating post: {e}")
+        # print(f"Error generating post: {e}")
         return None
 
 def format_ai_posts(ai_response):
