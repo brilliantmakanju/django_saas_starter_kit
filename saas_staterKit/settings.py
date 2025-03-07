@@ -254,24 +254,24 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS CONFIGURATION
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # Limit request size to 10 MB
 CORS_ORIGIN_ALLOW_ALL = False
-# Parse CORS_ALLOWED_ORIGINS from environment variables
+
+# Securely load allowed origins from environment variables
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
-# Ensure local frontend works in DEBUG mode
+# Ensure local development works in DEBUG mode
 if DEBUG:
-    CORS_ALLOWED_ORIGINS.append("http://localhost:3000")
+    CORS_ALLOWED_ORIGINS.extend([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ])
 
-# Allow all subdomains of the main domain for CSRF protection
-CSRF_TRUSTED_ORIGINS = ["https://" + host for host in ALLOWED_HOSTS]
+# Allow credentials (cookies, tokens)
+CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_CREDENTIALS = True  # Allow credentials (cookies, tokens)
-
-CORS_ALLOW_METHODS = [
-    "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-]
-
+# Define allowed methods and headers
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOW_HEADERS = [
     "x-requested-with",
     "content-type",
@@ -282,6 +282,39 @@ CORS_ALLOW_HEADERS = [
     "access-control-allow-origin",
     "content-disposition",
 ]
+
+# Set CSRF trusted origins securely
+CSRF_TRUSTED_ORIGINS = ["https://" + host for host in CORS_ALLOWED_ORIGINS if host]
+
+# Ensure HTTPS is used
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Enable HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_SECONDS = 31536000  # One year
+SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# Prevent content sniffing
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Enable XSS protection
+SECURE_BROWSER_XSS_FILTER = True
+
+# Prevent clickjacking
+X_FRAME_OPTIONS = 'DENY'
+
+# Enforce a strong Content Security Policy (CSP)
+# CSP_DEFAULT_SRC = ("'self'",)
+# CSP_SCRIPT_SRC = ("'self'", "https://trusted.cdn.com")
+# CSP_STYLE_SRC = ("'self'", "https://trusted.cdn.com")
+# CSP_IMG_SRC = ("'self'", "data:", "https://trusted.cdn.com")
+
+# Prevent exposing the Host header
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 AUTH_USER_MODEL = "accounts.UserAccount"
 
@@ -301,8 +334,8 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "user": "50/minute",  # Rate limit for authenticated users (by user ID)
-        "anon": "20/minute",  # Rate limit for unauthenticated users (by IP)
+        "user": "500/day",  # Rate limit for authenticated users (by user ID)
+        "anon": "10/minute",  # Rate limit for unauthenticated users (by IP)
     },
 
     # Filtering and Searching
@@ -361,18 +394,24 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=2),
 }
-# Sesame Configuration
-SESAME_MAX_AGE = 9000  # Links expire in 15 minutes (900 seconds)
-SESAME_ONE_TIME = True  # Magic link can be used only once
-SESAME_TOKEN_NAME = "token"  # Explicit token name in the query string
-SESAME_TOKEN_LENGTH = 70  # Increase token length for stronger security
-SESAME_SIGNING_ALGORITHM = "HS512"  # Use a stronger hashing algorithm (default is HS256)
-SESAME_DOMAIN = os.getenv("HOST_DOMAIN")  # Restrict tokens to your domain only
 
-# Secure Cookies for Magic Link
-SESSION_COOKIE_SECURE = True  # Use HTTPS for cookies
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to cookies
-SESSION_COOKIE_SAMESITE = "Strict"  # Prevent cross-site cookie usage
+SESAME_MAX_AGE = 600  # Shorten link expiry to 10 minutes
+SESAME_ONE_TIME = True  # Ensure links are single-use
+SESAME_TOKEN_NAME = "token"  # Use a more descriptive token name
+SESAME_TOKEN_LENGTH = 80  # Increase token length for stronger security
+SESAME_SIGNING_ALGORITHM = "HS512"  # Stronger signing algorithm
+SESAME_DOMAIN = os.getenv("HOST_DOMAIN", "yourdomain.com")  # Explicit fallback
+
+# Secure Cookies
+SESSION_COOKIE_SECURE = True  # HTTPS only
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
+SESSION_COOKIE_SAMESITE = "Strict"  # No cross-site usage
+
+# Additional Django Settings
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access
+CSRF_COOKIE_SAMESITE = "Strict"  # Prevent CSRF via cross-origin requests
+
+
 
 
 DJOSER = {

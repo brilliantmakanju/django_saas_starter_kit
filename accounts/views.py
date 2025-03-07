@@ -51,7 +51,7 @@ from sesame.utils import get_user as sesame_get_user
 
 # Load environment variables
 from datetime import timedelta
-
+from rest_framework.throttling import AnonRateThrottle
 load_dotenv()
 
 
@@ -990,6 +990,7 @@ class LinkedInSocialCallBack(APIView):
 
 ### Magic Link VIEW ( Send and Confirm Links )
 class SendMagicLinkView(APIView):
+    throttle_classes = [AnonRateThrottle]
     """
     API view to send a magic link for login or signup.
     """
@@ -1060,6 +1061,7 @@ class SendMagicLinkView(APIView):
         return True
 
 class ConfirmMagicLinkView(APIView):
+    throttle_classes = [AnonRateThrottle]
     """
     API view to confirm the magic link and authenticate the user.
     """
