@@ -25,7 +25,8 @@ def create_posts_from_formatted_data(secret_key, formatted_posts):
         formatted_posts (dict): The formatted posts data containing Twitter and LinkedIn posts.
     """
     # print(f"🔑 Secret Key Received: {secret_key}")
-    # print(f"📩 Formatted Posts Data: {json.dumps(formatted_posts, indent=2)}")  # Pretty-print the JSON data
+    # print(f"📩 Formatted Posts Data: {json.dumps(formatte
+    # d_posts, indent=2)}")  # Pretty-print the JSON data
 
     # Get the Webhook and associated organization using the secret key
     webhook = get_object_or_404(Webhook, private_secret=secret_key)
