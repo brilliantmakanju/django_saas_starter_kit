@@ -1,51 +1,167 @@
+<!DOCTYPE html>
 <html>
-    <head>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                color: #333;
-                background-color: #f4f4f4;
-                padding: 20px;
-            }
-            .container {
-                background-color: #fff;
-                padding: 20px;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            }
-            h1 {
-                color: #4CAF50;
-            }
-            p {
-                font-size: 16px;
-            }
-            .button {
-                background-color: #4CAF50;
-                color: white;
-                padding: 10px 20px;
-                text-decoration: none;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            .footer {
-                margin-top: 20px;
-                font-size: 14px;
-                color: #888;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>You're Invited to Join {{ organization_name }}</h1>
-            <p>Dear {{ user_email }},</p>
-            <p>You have been invited to join the organization **{{ organization_name }}**. Please click the link below to complete your sign-up and join:</p>
-            <a href="{{ signup_url }}" class="button">Join Organization</a>
-
-            <h3>Alternatively, if you'd like to sign up normally, you can do so by clicking the link below:</h3>
-            <p><a href="{{ signup_code_url }}" class="button">Sign Up with Code</a></p>
-            {{ invite_code }}
-
-            <p class="footer">Best regards,<br>The {{ organization_name }} Team</p>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Invitation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        .email-header {
+            background-color: #18181b;
+            color: #fff;
+            text-align: center;
+            padding: 24px;
+        }
+        .logo {
+            margin-bottom: 16px;
+        }
+        .email-body {
+            padding: 32px 24px;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            margin: 16px 0;
+            padding: 12px 28px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #18181b;
+            border-radius: 6px;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #27272a;
+        }
+        .email-footer {
+            text-align: center;
+            font-size: 13px;
+            color: #71717a;
+            padding: 20px;
+            background-color: #f4f4f5;
+            border-top: 1px solid #e4e4e7;
+        }
+        .features {
+            margin: 28px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .feature-icon {
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+        .feature-text {
+            flex: 1;
+        }
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #18181b;
+        }
+        .feature-description {
+            color: #52525b;
+            font-size: 14px;
+            margin: 0;
+        }
+        .org-name {
+            font-weight: 600;
+            color: #18181b;
+        }
+        .note {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f4f4f5;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #71717a;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM7.5 12.8L6.1 11.4L7.5 10L10.3 12.8L7.5 15.6L6.1 14.2L7.5 12.8ZM12 18C9.79 18 8 16.21 8 14H10C10 15.1 10.9 16 12 16C13.1 16 14 15.1 14 14C14 12.9 13.1 12 12 12C9.79 12 8 10.21 8 8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8H14C14 6.9 13.1 6 12 6C10.9 6 10 6.9 10 8C10 9.1 10.9 10 12 10C14.21 10 16 11.79 16 14C16 16.21 14.21 18 12 18ZM17.9 15.6L15.1 12.8L17.9 10L19.3 11.4L17.9 12.8L19.3 14.2L17.9 15.6Z" fill="white"/>
+                </svg>
+            </div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 600;">You're Invited</h1>
         </div>
-    </body>
+        <div class="email-body">
+            <p>Hello {{ user_email }},</p>
+            <p>You've been invited to join <span class="org-name">{{ organization_name }}</span> on Push to Post, the AI-powered tool that transforms your GitHub commits into engaging LinkedIn posts.</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{{ invitation_url }}" class="button">View Invitation</a>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#18181b"/>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <div class="feature-title">Automated Content Creation</div>
+                        <p class="feature-description">Turn your GitHub commits into professional LinkedIn posts with AI</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#18181b"/>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <div class="feature-title">Multiple Tone Options</div>
+                        <p class="feature-description">Customize your post style to match your personal brand</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="#18181b"/>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <div class="feature-title">Team Collaboration</div>
+                        <p class="feature-description">Work together with your team on content creation and scheduling</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note">
+                <strong>Note:</strong> This invitation will expire in 7 days. If you do not wish to join, you can safely ignore this email.
+            </div>
+        </div>
+        <div class="email-footer">
+            <p>&copy; {{ year }} Push to Post. All rights reserved.</p>
+            <p>Transforming your Git commits into engaging LinkedIn content</p>
+        </div>
+    </div>
+</body>
 </html>
+
