@@ -87,6 +87,7 @@ SHARED_APPS = [
 
 
     'accounts',
+    'anymail',
     'organizations',
 ]
 
@@ -329,14 +330,19 @@ if DEBUG:
 
 # Production email backend using Brevo
 else:
-    BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp-relay.brevo.com"
-    EMAIL_PORT = 587
-    EMAIL_HOST_USER = os.getenv("BREVO_SMTP_USER", "your_email_address")
-    EMAIL_HOST_PASSWORD = BREVO_API_KEY
-    EMAIL_USE_TLS = True
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    ANYMAIL = {
+        "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
+        "BREVO_API_URL": "https://api.brevo.com/v3",  # Optional, in case the default changes
+    }
+    # BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+    # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    # EMAIL_HOST = "smtp-relay.brevo.com"
+    # EMAIL_PORT = 587
+    # EMAIL_HOST_USER = os.getenv("BREVO_SMTP_USER", "your_email_address")
+    # EMAIL_HOST_PASSWORD = BREVO_API_KEY
+    # EMAIL_USE_TLS = True
+    # DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
