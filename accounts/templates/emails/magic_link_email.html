@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Magic Link</title>
+    <title>Your Sign-in Link</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -40,15 +40,20 @@
             margin: 28px auto;
             padding: 12px 28px;
             text-decoration: none;
-            color: #fff;
+            color: #fff !important; /* Force white color */
             background-color: #18181b;
             border-radius: 6px;
             font-weight: 500;
             letter-spacing: 0.01em;
             transition: background-color 0.2s;
         }
+        /* Ensure link stays white even after being visited */
+        .email-button:visited {
+            color: #fff !important;
+        }
         .email-button:hover {
             background-color: #27272a;
+            color: #fff !important;
         }
         .email-footer {
             text-align: center;
@@ -81,13 +86,13 @@
                     <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM7.5 12.8L6.1 11.4L7.5 10L10.3 12.8L7.5 15.6L6.1 14.2L7.5 12.8ZM12 18C9.79 18 8 16.21 8 14H10C10 15.1 10.9 16 12 16C13.1 16 14 15.1 14 14C14 12.9 13.1 12 12 12C9.79 12 8 10.21 8 8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8H14C14 6.9 13.1 6 12 6C10.9 6 10 6.9 10 8C10 9.1 10.9 10 12 10C14.21 10 16 11.79 16 14C16 16.21 14.21 18 12 18ZM17.9 15.6L15.1 12.8L17.9 10L19.3 11.4L17.9 12.8L19.3 14.2L17.9 15.6Z" fill="white"/>
                 </svg>
             </div>
-            <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Your Magic Link</h1>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 600;">Your Sign-in Link</h1>
         </div>
         <div class="email-body">
             <p>Hi there,</p>
             <p>You requested a secure, passwordless sign-in link for <strong>Push to Post</strong>, your AI-powered GitHub commit to LinkedIn post generator.</p>
-            <a href="{{ magic_link }}" class="email-button">Sign in to Push to Post</a>
-            <p class="help-text">If you didn't request this link, you can safely ignore this email. The link will expire in 10 minutes for security reasons.</p>
+            <a href="{{ magic_link }}" class="email-button">Access your account</a>
+            <p class="help-text">If you didn't request this link, you may disregard this email. The link will expire in 10 minutes for security purposes.</p>
             <p class="link-text">Or copy and paste this URL into your browser:<br>{{ magic_link }}</p>
         </div>
         <div class="email-footer">
@@ -97,4 +102,3 @@
     </div>
 </body>
 </html>
-
