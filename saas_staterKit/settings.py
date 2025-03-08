@@ -318,12 +318,25 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 AUTH_USER_MODEL = "accounts.UserAccount"
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = os.getenv('EMAIL_APP_USER_HOST')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_APP_HOST_PASSWORD')
-EMAIL_USE_TLS = True
+# Default email backend for local development
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = os.getenv("EMAIL_APP_USER_HOST")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_APP_HOST_PASSWORD")
+    EMAIL_USE_TLS = True
+
+# Production email backend using Brevo
+else:
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp-relay.brevo.com"
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = os.getenv("BREVO_SMTP_USER", "your_email_address")
+    EMAIL_HOST_PASSWORD = BREVO_API_KEY
+    EMAIL_USE_TLS = True
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
