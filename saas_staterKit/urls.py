@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 from django.urls import path, include
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Use the custom admin URL defined in the environment variable
@@ -27,3 +28,9 @@ urlpatterns = [
     # path('api/v1/subscriptions/', include('subscriptions.urls')),  # Subscription endpoints like creating, managing
     # path('api/v1/stripe/webhook/', include('subscriptions.urls')),  # Stripe webhook to handle subscriptions
 ]
+
+
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

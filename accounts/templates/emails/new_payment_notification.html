@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Pending Payment Notification</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.5;
+        }
+        .email-wrapper {
+            width: 100%;
+            max-width: 100%;
+            padding: 60px 0;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            max-width: 520px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .email-header {
+            background-color: #000000;
+            color: #ffffff;
+            text-align: center;
+            padding: 32px 24px;
+        }
+        .logo {
+            margin-bottom: 20px;
+        }
+        .email-body {
+            padding: 40px 32px;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            margin: 16px 0;
+            padding: 14px 32px;
+            text-decoration: none;
+            color: #ffffff;
+            background-color: #000000;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 15px;
+            letter-spacing: 0.01em;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #333333;
+        }
+        .email-footer {
+            text-align: center;
+            font-size: 13px;
+            color: #666666;
+            padding: 24px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eeeeee;
+        }
+        .payment-details {
+            margin: 32px 0;
+            padding: 24px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eeeeee;
+        }
+        .detail-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #666666;
+        }
+        .detail-value {
+            font-weight: 500;
+            color: #000000;
+            text-align: right;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background-color: #f5f5f5;
+            color: #000000;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .action-container {
+            text-align: center;
+            margin: 36px 0 24px;
+        }
+        .notification-text {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 400;
+            color: #333333;
+            margin-bottom: 36px;
+            margin-top: 0;
+        }
+        .footer-text {
+            margin: 6px 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <div class="email-header">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM7.5 12.8L6.1 11.4L7.5 10L10.3 12.8L7.5 15.6L6.1 14.2L7.5 12.8ZM12 18C9.79 18 8 16.21 8 14H10C10 15.1 10.9 16 12 16C13.1 16 14 15.1 14 14C14 12.9 13.1 12 12 12C9.79 12 8 10.21 8 8C8 5.79 9.79 4 12 4C14.21 4 16 5.79 16 8H14C14 6.9 13.1 6 12 6C10.9 6 10 6.9 10 8C10 9.1 10.9 10 12 10C14.21 10 16 11.79 16 14C16 16.21 14.21 18 12 18ZM17.9 15.6L15.1 12.8L17.9 10L19.3 11.4L17.9 12.8L19.3 14.2L17.9 15.6Z" fill="white"/>
+                    </svg>
+                </div>
+                <h1>New Payment Notification</h1>
+            </div>
+            <div class="email-body">
+                <p class="notification-text">A new payment has been submitted and requires your review.</p>
+
+                <div class="payment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">User: </span>
+                        <span class="detail-value">{{ user }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Plan: </span>
+                        <span class="detail-value">{{ plan }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Period: </span>
+                        <span class="detail-value">{{ period }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status: </span>
+                        <span class="status-badge">Pending Approval</span>
+                    </div>
+                </div>
+
+                <div class="action-container">
+                    <a href="{{ admin_url }}" class="button">Review Payment</a>
+                </div>
+
+                <p style="color: #666666; font-size: 14px; margin-top: 24px; text-align: center;">
+                    Please review this payment at your earliest convenience.
+                </p>
+            </div>
+            <div class="email-footer">
+                <p class="footer-text">&copy; {{ year }} JolexHive. All rights reserved.</p>
+                <p class="footer-text">This is an automated notification.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

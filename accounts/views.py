@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 
 from django.contrib.auth import get_user_model
 
-from .models import UserAccount, SubscriptionPlan
+from .models import UserAccount, SubscriptionPlan, Payment
 from .serializers import UserProfileSerializer, CreateSubscriptionSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -988,6 +988,66 @@ class LinkedInSocialCallBack(APIView):
         return linkedin_callback_oauth(request, organization)
 
 
+
+
+
+
+
+class PaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        plan = request.data.get('plan')
+        period = request.data.get('period', 'monthly')
+        proof_of_payment = request.data.get('proof_of_payment')
+        additional_note = request.data.get('additional_note', '')
+        transaction_ref = request.data.get('transaction_ref', '')
+
+        # Decode the base64 image if provided
+        if proof_of_payment:
+            import base64
+            from django.core.files.base import ContentFile
+            format, imgstr = proof_of_payment.split(';base64,')
+            ext = format.split('/')[-1]
+            proof_of_payment = ContentFile(base64.b64decode(imgstr), name=f'proof_of_payment.{ext}')
+
+
+        # Check for existing pending payment
+        existing_pending_payment = Payment.objects.filter(user=user, status='pending').exists()
+        if existing_pending_payment:
+            return Response({'message': 'You have a pending payment. Please wait for approval or rejection before creating a new one.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Create new payment
+        payment = Payment.objects.create(
+            user=user,
+            plan=plan,
+            period=period,
+            transaction_ref=transaction_ref,
+            proof_of_payment=proof_of_payment,
+            additional_note=additional_note
+        )
+
+        # Send email notification with detailed context
+        send_email(
+            subject="New Payment Created",
+            recipient_list=["brilliantmakanju7@gmail.com"],
+            context={
+                "payment_id": payment.id,
+                "user": user.email,
+                "plan": payment.get_plan_display(),
+                "period": payment.get_period_display(),
+                "additional_note": payment.additional_note,
+                "message": "A new payment has been created and is pending approval."
+            },
+            template="emails/new_payment_notification.html",
+            plain_message="A new payment has been created."
+        )
+
+        return Response({'message': 'Payment created successfully. Awaiting approval.'}, status=status.HTTP_201_CREATED)
+
+
 ### Magic Link VIEW ( Send and Confirm Links )
 class SendMagicLinkView(APIView):
     throttle_classes = [AnonRateThrottle]
@@ -1038,6 +1098,7 @@ class SendMagicLinkView(APIView):
             template="emails/magic_link_email.html",
             plain_message="Click the link to Authenticate."
         )
+
 
         # Handle email sending failure
         if not email_result.get("success"):

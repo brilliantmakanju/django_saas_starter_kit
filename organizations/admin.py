@@ -7,9 +7,10 @@ from datetime import timedelta
 from django.contrib import admin
 from .models import InviteCode, Organization, UserOrganizationRole
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 
 
-class InviteCodeAdmin(admin.ModelAdmin):
+class InviteCodeAdmin(ModelAdmin):
     list_display = (
         'code',
         'invitee_email',
@@ -47,7 +48,7 @@ class InviteCodeAdmin(admin.ModelAdmin):
 
 admin.site.register(InviteCode, InviteCodeAdmin)
 
-class UserOrganizationRoleAdmin(admin.ModelAdmin):
+class UserOrganizationRoleAdmin(ModelAdmin):
     list_display = ('user', 'organization', 'role')  # Display these fields in the admin list view
     list_filter = ('role',)  # Add filtering by role
     search_fields = ('user__email', 'organization__name')  # Enable search by user email and organization name
@@ -65,7 +66,7 @@ class UserOrganizationRoleAdmin(admin.ModelAdmin):
 # Register the model with the customized admin class
 admin.site.register(UserOrganizationRole, UserOrganizationRoleAdmin)
 
-class OrganizationAdmin(TenantAdminMixin, admin.ModelAdmin):
+class OrganizationAdmin(TenantAdminMixin, ModelAdmin):
     list_display = ('name', 'schema_name', 'created_on', 'selected_tone', 'shuffle_tones', 'has_twitter', 'has_linkedin')  # Added new fields
     list_filter = ('created_on', 'selected_tone', 'shuffle_tones', 'has_twitter', 'has_linkedin')  # Allow filtering by tone and shuffle status
     search_fields = ('name', 'schema_name', 'owner__username')  # Search includes owner username
@@ -98,7 +99,7 @@ class OrganizationAdmin(TenantAdminMixin, admin.ModelAdmin):
         obj.save()
 
 
-class DomainAdmin(admin.ModelAdmin):
+class DomainAdmin(ModelAdmin):
     list_display = ('domain', 'tenant', 'is_primary')
     list_filter = ('is_primary',)
     search_fields = ('domain',)

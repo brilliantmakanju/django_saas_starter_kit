@@ -1,6 +1,7 @@
 
 import uuid
 from django.utils import timezone
+from datetime import timedelta
 from django.db import models
 
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
@@ -126,3 +127,42 @@ class SubscriptionPlan(models.Model):
 
     def __str__(self):
         return f"{self.get_name_display()} ({self.stripe_price_id}) ({self.description})"
+
+
+
+class Payment(models.Model):
+    PLAN_CHOICES = [
+        ('pro', 'Pro'),
+        ('lifetime', 'Lifetime Deal'),
+    ]
+    PERIOD_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('annually', 'Annually'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('expired', 'Expired'),
+        ('verified', 'Verified'),
+    ]
+
+    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
+    plan = models.CharField(max_length=50, choices=PLAN_CHOICES)
+    period = models.CharField(max_length=50, choices=PERIOD_CHOICES, default='monthly', blank=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    proof_of_payment = models.ImageField(upload_to='payment_proofs/', blank=True, null=True)
+    transaction_ref = models.CharField(max_length=255, blank=True, null=True)
+    additional_note = models.TextField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.status == 'verified' and not self.starts_at:
+            self.starts_at = timezone.now()
+            if self.plan == 'lifetime':
+                self.ends_at = self.starts_at + timedelta(days=365 * 99999)
+            elif self.plan == 'pro' and self.period == 'monthly':
+                self.ends_at = self.starts_at + timedelta(days=30)
+            elif self.plan == 'pro' and self.period == 'annually':
+                self.ends_at = self.starts_at + timedelta(days=365)
+
+        super().save(*args, **kwargs)

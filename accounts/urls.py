@@ -8,7 +8,7 @@ from .views import (
     get_jwt_from_oauth,
     stripe_webhook,
     SocialCallBack, LinkedInSocialCallBack,
-    ConfirmMagicLinkView, SendMagicLinkView
+    ConfirmMagicLinkView, SendMagicLinkView, PaymentView
 )
 
 urlpatterns = [
@@ -29,5 +29,8 @@ urlpatterns = [
     path('webhooks/stripe/', stripe_webhook, name='stripe-webhook'),
 
     # User Profile Endpoints
-    path('profile/update/', UserProfileUpdateView.as_view(), name='profile-update')
+    path('profile/update/', UserProfileUpdateView.as_view(), name='profile-update'),
+
+    # Payment Endpoints
+    path('payment/create/', PaymentView.as_view(), name='payment-create'),
 ]

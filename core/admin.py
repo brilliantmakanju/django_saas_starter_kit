@@ -1,16 +1,17 @@
 from django.contrib import admin
 from .models import Webhook, Post, PostGroup, SocialMediaAccount
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 
 @admin.register(Webhook)
-class WebhookAdmin(admin.ModelAdmin):
+class WebhookAdmin(ModelAdmin):
     list_display = ['organization', 'enabled', 'created_at', 'updated_at']
     search_fields = ['organization__name']
     list_filter = ['enabled']
 
 
 
-class PostAdmin(admin.ModelAdmin):
+class PostAdmin(ModelAdmin):
     list_display = (
         'content_preview',
         'status',
@@ -87,7 +88,7 @@ class PostAdmin(admin.ModelAdmin):
 
 
 @admin.register(PostGroup)
-class PostGroupAdmin(admin.ModelAdmin):
+class PostGroupAdmin(ModelAdmin):
     """
     Admin configuration for the PostGroup model to make it more detailed and user-friendly.
     """
@@ -114,7 +115,7 @@ class PostGroupAdmin(admin.ModelAdmin):
     description_short.short_description = "Description (short)"
 
 
-# class PostGroupAdmin(admin.ModelAdmin):
+# class PostGroupAdmin(ModelAdmin):
 #     list_display = ("id", "name", "organization", "created_at", "updated_at")
 #     list_filter = ("organization",)
 #     # search_fields
@@ -125,7 +126,7 @@ admin.site.register(Post, PostAdmin)
 # admin.site.register(PostGroup, PostGroupAdmin)
 
 
-class SocialMediaAccountAdmin(admin.ModelAdmin):
+class SocialMediaAccountAdmin(ModelAdmin):
     list_display = (
         'organization',
         'platform',

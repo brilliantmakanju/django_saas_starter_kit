@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from celery.schedules import crontab
 from datetime import timedelta
 from dotenv import load_dotenv
 
@@ -60,12 +59,19 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 if DEBUG:
     ALLOWED_HOSTS.append("*")  # Allow all in local development
 
+
 # Application definitions
 # **SHARED_APPS** is for apps that will be shared across all tenants.
 SHARED_APPS = [
+    'unfold',  # before django.contrib.admin
+    'unfold.contrib.filters',  # optional, if special filters are needed
+    'unfold.contrib.forms',  # optional, if special form elements are needed
+    'unfold.contrib.inlines',  # optional, if special inlines are needed
+    'unfold.contrib.import_export',  # optional, if django-import-export package is used
+    'unfold.contrib.guardian',  # optional, if django-guardian package is used
+    'unfold.contrib.simple_history',  # optional, if django-simple-history package is used
     'django_tenants',  # Multi-tenancy support
-
-    'django.contrib.admin',
+    'django.contrib.admin',  # required
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -149,46 +155,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'saas_staterKit.wsgi.application'
-
-# # Redis Configuration
-# REDIS_USER = os.getenv("REDISUSER", "default")
-# REDIS_PASSWORD = os.getenv("REDISPASSWORD", "")
-# REDIS_HOST = os.getenv("REDISHOST", "redis")
-# REDIS_PORT = os.getenv("REDISPORT", "6379")
-#
-# # Prevent empty password from breaking Redis URL
-# REDIS_AUTH = f":{REDIS_PASSWORD}@" if REDIS_PASSWORD else ""
-# REDIS_URL = f"redis://{REDIS_AUTH}{REDIS_HOST}:{REDIS_PORT}"
-#
-# # Celery Configuration
-# CELERY_BROKER_URL = "redis://localhost:6379/0" if DEBUG else REDIS_URL
-# CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)  # Ensure proper default
-# CELERY_BEAT_SCHEDULER = os.getenv("CELERY_BEAT_SCHEDULER", "django_celery_beat.schedulers.DatabaseScheduler")
-#
-# CELERY_ACCEPT_CONTENT = ['json']
-# CELERY_TASK_SERIALIZER = 'json'
-# CELERY_TIMEZONE = 'UTC'
-# CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-#
-# # Celery Beat Task Scheduling
-# CELERY_BEAT_SCHEDULE = {
-#     'publish_pending_posts': {
-#         'task': 'core.tasks.publish_pending_post',
-#         'schedule': crontab(minute='*/1'),  # Runs every minute
-#     },
-# }
-#
-# # Redis Caching (Only for Production)
-# if not DEBUG:
-#     CACHES = {
-#         "default": {
-#             "BACKEND": "django.core.cache.backends.redis.RedisCache",
-#             "LOCATION": REDIS_URL,
-#         }
-#     }
-
-
-
 # Database
 # Use this configuration to connect to a PostgreSQL database.
 # # Requires environment variables for security and flexibility in production.
@@ -249,6 +215,10 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+
+# Media files (Uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -335,14 +305,6 @@ else:
         "BREVO_API_KEY": os.getenv("BREVO_API_KEY"),
         "BREVO_API_URL": "https://api.brevo.com/v3",  # Optional, in case the default changes
     }
-    # BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-    # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    # EMAIL_HOST = "smtp-relay.brevo.com"
-    # EMAIL_PORT = 587
-    # EMAIL_HOST_USER = os.getenv("BREVO_SMTP_USER", "your_email_address")
-    # EMAIL_HOST_PASSWORD = BREVO_API_KEY
-    # EMAIL_USE_TLS = True
-    # DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
@@ -471,6 +433,72 @@ AUTHENTICATION_BACKENDS = (
 )
 
 
+UNFOLD = {
+    "SITE_TITLE": "Push to Post Admin",
+    "SITE_HEADER": "Push to Post",
+    "SITE_SUBHEADER": "Effortless Content Automation",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "send",  # Updated icon symbol to match the app's "push" theme
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,  # Assuming we might not need this for the admin panel
+    "SHOW_BACK_BUTTON": True,
+    # "THEME": "dark",  # Force dark theme for consistency
+    "BORDER_RADIUS": "8px",  # Subtle rounded corners for a modern look
+
+    "COLORS": {
+        "base": {
+            "50": "245 245 245",  # Very light grey for backgrounds
+            "100": "235 235 235",
+            "200": "220 220 220",
+            "300": "200 200 200",
+            "400": "160 160 160",
+            "500": "120 120 120",  # Neutral grey for general elements
+            "600": "80 80 80",
+            "700": "60 60 60",
+            "800": "40 40 40",  # Darker greys for components
+            "900": "20 20 20",  # Near-black for high-contrast elements
+            "950": "10 10 10",  # Almost pitch black for the darkest elements
+        },
+        "primary": {
+            "50": "250 250 250",  # Very light grey for subtle highlights
+            "100": "240 240 240",
+            "200": "225 225 225",
+            "300": "200 200 200",
+            "400": "150 150 150",
+            "500": "100 100 100",
+            "600": "80 80 80",
+            "700": "60 60 60",
+            "800": "40 40 40",
+            "900": "30 30 30",
+            "950": "20 20 20",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",  # Mid-grey for less important text
+            "subtle-dark": "var(--color-base-400)",
+            "default-light": "var(--color-base-800)",  # Darker grey for default text
+            "default-dark": "var(--color-base-200)",
+            "important-light": "var(--color-base-900)",  # Strong contrast for important text
+            "important-dark": "var(--color-base-50)",
+        },
+    },
+
+    "EXTENSIONS": {
+        "modeltranslation": {
+            "flags": {
+                "en": "🇬🇧",
+                "fr": "🇫🇷",
+                "nl": "🇧🇪",
+            },
+        },
+    },
+
+    "SIDEBAR": {
+        "show_search": True,  # Enable search to quickly navigate admin sections
+        "show_all_applications": False,  # Show all apps in a dropdown for easier management
+        "separator": True,  # Top border
+        "collapsible": True,  # Collapsible group of links
+    },
+}
 
 
 
