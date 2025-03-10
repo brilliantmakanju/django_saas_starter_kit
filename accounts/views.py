@@ -1032,8 +1032,9 @@ class PaymentView(APIView):
         # Send email notification with detailed context
         send_email(
             subject="New Payment Created",
-            recipient_list=["brilliantmakanju7@gmail.com"],
+            recipient_list=[settings.DJANGO_PRODUCT_OWNER_EMAIL],
             context={
+
                 "payment_id": payment.id,
                 "user": user.email,
                 "plan": payment.get_plan_display(),
