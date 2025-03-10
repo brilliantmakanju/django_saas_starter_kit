@@ -130,6 +130,10 @@ class SubscriptionPlan(models.Model):
 
 
 
+
+
+
+
 class Payment(models.Model):
     PLAN_CHOICES = [
         ('pro', 'Pro'),
