@@ -48,7 +48,7 @@ def publish_pending_post():
                         # Count posts published by the owner in the current month
                         start_of_month = now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                         monthly_post_count = Post.objects.filter(
-                            created_by=owner,
+                            organization=tenant,
                             created_at__gte=start_of_month
                         ).count()
 

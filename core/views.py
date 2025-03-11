@@ -11,7 +11,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from accounts.utlis.check_user import has_pro_access
 from .serializers import PostSerializer
 from django.db.models import Max
-from .models import generate_encrypted_secret
+from .models import generate_encrypted_secret, Platform
 from organizations.models import Organization, UserOrganizationRole
 from .models import Webhook, Post, PostGroup
 from django.core.mail import send_mail
@@ -73,8 +73,17 @@ class PostView(APIView):
                             status=status.HTTP_403_FORBIDDEN)
 
             # Fetch posts and separate grouped/ungrouped
-        all_posts = Post.objects.filter(organization=organization, is_deleted=False).order_by('-created_at')
-        grouped_posts = Post.objects.filter(post_group__isnull=False, organization=organization, is_deleted=False)
+        # all_posts = Post.objects.filter(organization=organization, is_deleted=False, platform=Platform.LINKEDIN).order_by('-created_at')
+        all_posts = Post.objects.filter(
+            organization=organization,
+            is_deleted=False,
+            platform=Platform.LINKEDIN
+        ).order_by('-created_at')
+
+        # grouped_posts = Post.objects.filter(post_group__isnull=False, organization=organization, is_deleted=False, platform=Platform.LINKEDIN)
+        # ungrouped_posts = all_posts.filter(post_group__isnull=True)
+
+        grouped_posts = all_posts.filter(post_group__isnull=False)
         ungrouped_posts = all_posts.filter(post_group__isnull=True)
 
         grouped_data = (
