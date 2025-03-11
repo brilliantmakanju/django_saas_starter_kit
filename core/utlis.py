@@ -468,16 +468,32 @@ def select_linkedin_post_to_publish(posts_to_publish):
     non_priority_posts = [post for post in linkedIn_posts if not post.priority]
 
     # Step 3: Select the post based on priority
+    # if priority_posts:
+    #     # If there are priority posts, select the first one (you can also choose random here if needed)
+    #     selected_post = priority_posts[0]
+    #     print(f"Priority post selected: {selected_post.id}")
+    #     return selected_post
+    # else:
+    #     # If no priority posts, select one randomly from non-priority posts
+    #     selected_post = random.choice(non_priority_posts)
+    #     print(f"Random post selected: {selected_post.id}")
+    #     return selected_post
+
+        # Step 3: Select the post based on priority
     if priority_posts:
-        # If there are priority posts, select the first one (you can also choose random here if needed)
-        selected_post = priority_posts[0]
+        selected_post = priority_posts[0]  # Pick the first priority post
         print(f"Priority post selected: {selected_post.id}")
-        return selected_post
     else:
-        # If no priority posts, select one randomly from non-priority posts
         selected_post = random.choice(non_priority_posts)
         print(f"Random post selected: {selected_post.id}")
-        return selected_post
+
+        # Step 4: Delete all other LinkedIn posts
+    for post in linkedIn_posts:
+        if post != selected_post:
+            print(f"Deleting post: {post.id}")
+            post.delete()
+
+    return selected_post
 
 
 # Function to delete the posts that were not selected for publishing
