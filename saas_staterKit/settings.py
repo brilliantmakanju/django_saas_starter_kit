@@ -243,42 +243,50 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Define allowed methods and headers
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-# CORS_ALLOW_HEADERS = [
-#     "x-requested-with",
-#     "content-type",
-#     "accept",
-#     "origin",
-#     "authorization",
-#     "accept-encoding",
-#     "access-control-allow-origin",
-#     "content-disposition",
-# ]
-CORS_ALLOW_HEADERS = ["*"]
+CORS_ALLOW_HEADERS = [
+    "x-requested-with",
+    "content-type",
+    "accept",
+    "origin",
+    "authorization",
+    "accept-encoding",
+    "access-control-allow-origin",
+    "content-disposition",
+    "x-github-delivery",
+    "x-github-event",
+    "x-github-hook-id",
+    "x-github-hook-installation-target-id",
+    "x-github-hook-installation-target-type",
+    "x-hub-signature",
+    "x-hub-signature-256",
+]
+
+# CORS_ALLOW_HEADERS = ["*"]
 # Set CSRF trusted origins securely
 CSRF_TRUSTED_ORIGINS = ["https://" + host for host in CORS_ALLOWED_ORIGINS if host]
 
-# # Ensure HTTPS is used
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-#
-# # Enable HTTP Strict Transport Security (HSTS)
-# SECURE_HSTS_SECONDS = 31536000  # One year
-# SECURE_HSTS_PRELOAD = True
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-#
-# # Prevent content sniffing
-# SECURE_CONTENT_TYPE_NOSNIFF = True
-#
-# # Enable XSS protection
-# SECURE_BROWSER_XSS_FILTER = True
-#
-# # Prevent clickjacking
-# X_FRAME_OPTIONS = 'DENY'
-#
-# # Prevent exposing the Host header
-# USE_X_FORWARDED_HOST = True
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Ensure HTTPS is used
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Enable HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_SECONDS = 31536000  # One year
+SECURE_HSTS_PRELOAD = True
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# Prevent content sniffing
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Enable XSS protection
+SECURE_BROWSER_XSS_FILTER = True
+
+# Prevent clickjacking
+X_FRAME_OPTIONS = 'DENY'
+
+# Prevent exposing the Host header
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Enforce a strong Content Security Policy (CSP)
 # CSP_DEFAULT_SRC = ("'self'",)

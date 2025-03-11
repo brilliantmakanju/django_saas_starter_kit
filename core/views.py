@@ -295,76 +295,176 @@ class CsrfExemptMixin:
 class GitHubWebhookView(CsrfExemptMixin, View):
     # @method_decorator(csrf_exempt)  # Disable CSRF for webhook creation (since GitHub is making the request)
     def post(self, request):
+        print("📌 Webhook received - Processing started.")
+
         # 1. Retrieve the organization and the secret from the URL
         organization = getattr(request, 'organization', None)
-        print("Starting")
+        print(f"🔍 Retrieved organization: {organization}")
 
         if not organization:
+            print("❌ Organization not found.")
             return JsonResponse({'error': 'Organization not found.'}, status=404)
 
         # **NEW: Retrieve the organization owner**
         try:
             owner = UserOrganizationRole.objects.get(organization=organization, role='owner').user
+            print(f"👤 Organization owner found: {owner.email}")
         except UserOrganizationRole.DoesNotExist:
+            print("❌ Organization owner not found.")
             return JsonResponse({'error': 'Organization owner not found.'}, status=403)
 
         # Count published posts in the organization
         published_posts_count = Post.objects.filter(
             organization=self.organization
         ).count()
+        print(f"📝 Published posts count: {published_posts_count}")
 
         # **NEW: Check if the owner is on the free plan and has 5+ published posts**
         if has_pro_access(owner) is False and published_posts_count >= 5:
+            print("🚫 Post limit reached for free plan.")
             return JsonResponse({'error': 'Post limit reached for free plan.'}, status=403)
 
         # Check if the organization has platform(s) enabled and generate webhook details
         if not organization.can_generate_webhook():
+            print("⚠️ No platform enabled for webhook generation.")
             return JsonResponse({
                 "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
             }, status=403)
 
-
         secret_key = request.GET.get('secret_key', '')
+        print(f"🔑 Secret key received: {secret_key}")
+
         if not secret_key:
+            print("❌ Missing secret key.")
             return JsonResponse({'error': 'Missing secret_key.'}, status=400)
 
         # 2. Find the corresponding webhook for the organization
+        print(f"🔎 Looking up webhook for organization: {organization}")
         organization_instance = Organization.objects.get(name=organization)
         try:
             webhook = Webhook.objects.get(organization=organization_instance, enabled=True, public_secret=secret_key)
+            print(f"✅ Webhook found: {webhook.id}")
         except Webhook.DoesNotExist:
+            print("❌ Webhook not found or inactive.")
             return JsonResponse({'error': 'Webhook not configured or inactive for this organization.'}, status=400)
 
         # 3. Verify the secret key
+        print("🔐 Verifying secret key...")
         if not self._verify_secret(secret_key, webhook.public_secret):
+            print("🚫 Secret key verification failed.")
             raise PermissionDenied("Invalid secret key.")
+        print("✅ Secret key verified.")
 
         # 4. Perform security checks to validate the request is from GitHub (IP validation)
+        print("🌍 Validating GitHub request source...")
         if not self._is_github_request(request, webhook.private_secret):
+            print("🚫 Invalid request source (Not from GitHub).")
             raise PermissionDenied("Invalid request source.")
+        print("✅ GitHub request source validated.")
 
         # 5. Verify that the request is a 'push' event
-        if request.headers.get('X-GitHub-Event') != 'push':
+        github_event = request.headers.get('X-GitHub-Event')
+        print(f"📢 GitHub event received: {github_event}")
+
+        if github_event != 'push':
+            print("⚠️ Not a push event. Ignoring request.")
             return JsonResponse({'error': 'This endpoint only handles push events.'}, status=200)
 
         # 6. Check the repository and branch in the payload
+        print("📦 Loading request payload...")
         payload = json.loads(request.body)
-
         branch = payload.get('ref', '').split('/')[-1]  # Get branch name from ref (refs/heads/<branch>)
+        print(f"🌿 Branch extracted from payload: {branch}")
 
         if branch != webhook.branch:
+            print(f"🚫 Branch mismatch: Expected {webhook.branch}, but received {branch}.")
             return JsonResponse({'error': 'Repository or branch mismatch.'}, status=200)
 
         # 7. Get the commit message and print it
         commit_message = payload.get('head_commit', {}).get('message', '')
+        print(f"📝 Commit message: {commit_message}")
 
         if commit_message:
+            print("🤖 Generating AI post...")
             post_tone = organization.get_tone()
-            # Generate post from AI
             generate_post_with_ai(commit_message, tone=post_tone, secret_key=webhook.private_secret)
+            print("✅ AI post generation complete.")
 
         # 8. Send a success response
+        print("✅ Webhook processed successfully.")
         return JsonResponse({'message': 'Webhook processed successfully.'}, status=200)
+
+    # def post(self, request):
+    #     # 1. Retrieve the organization and the secret from the URL
+    #     organization = getattr(request, 'organization', None)
+    #     print("Starting")
+    #
+    #     if not organization:
+    #         return JsonResponse({'error': 'Organization not found.'}, status=404)
+    #
+    #     # **NEW: Retrieve the organization owner**
+    #     try:
+    #         owner = UserOrganizationRole.objects.get(organization=organization, role='owner').user
+    #     except UserOrganizationRole.DoesNotExist:
+    #         return JsonResponse({'error': 'Organization owner not found.'}, status=403)
+    #
+    #     # Count published posts in the organization
+    #     published_posts_count = Post.objects.filter(
+    #         organization=self.organization
+    #     ).count()
+    #
+    #     # **NEW: Check if the owner is on the free plan and has 5+ published posts**
+    #     if has_pro_access(owner) is False and published_posts_count >= 5:
+    #         return JsonResponse({'error': 'Post limit reached for free plan.'}, status=403)
+    #
+    #     # Check if the organization has platform(s) enabled and generate webhook details
+    #     if not organization.can_generate_webhook():
+    #         return JsonResponse({
+    #             "message": "You must enable at least one platform (Twitter or LinkedIn) to generate webhook details."
+    #         }, status=403)
+    #
+    #
+    #     secret_key = request.GET.get('secret_key', '')
+    #     if not secret_key:
+    #         return JsonResponse({'error': 'Missing secret_key.'}, status=400)
+    #
+    #     # 2. Find the corresponding webhook for the organization
+    #     organization_instance = Organization.objects.get(name=organization)
+    #     try:
+    #         webhook = Webhook.objects.get(organization=organization_instance, enabled=True, public_secret=secret_key)
+    #     except Webhook.DoesNotExist:
+    #         return JsonResponse({'error': 'Webhook not configured or inactive for this organization.'}, status=400)
+    #
+    #     # 3. Verify the secret key
+    #     if not self._verify_secret(secret_key, webhook.public_secret):
+    #         raise PermissionDenied("Invalid secret key.")
+    #
+    #     # 4. Perform security checks to validate the request is from GitHub (IP validation)
+    #     if not self._is_github_request(request, webhook.private_secret):
+    #         raise PermissionDenied("Invalid request source.")
+    #
+    #     # 5. Verify that the request is a 'push' event
+    #     if request.headers.get('X-GitHub-Event') != 'push':
+    #         return JsonResponse({'error': 'This endpoint only handles push events.'}, status=200)
+    #
+    #     # 6. Check the repository and branch in the payload
+    #     payload = json.loads(request.body)
+    #
+    #     branch = payload.get('ref', '').split('/')[-1]  # Get branch name from ref (refs/heads/<branch>)
+    #
+    #     if branch != webhook.branch:
+    #         return JsonResponse({'error': 'Repository or branch mismatch.'}, status=200)
+    #
+    #     # 7. Get the commit message and print it
+    #     commit_message = payload.get('head_commit', {}).get('message', '')
+    #
+    #     if commit_message:
+    #         post_tone = organization.get_tone()
+    #         # Generate post from AI
+    #         generate_post_with_ai(commit_message, tone=post_tone, secret_key=webhook.private_secret)
+    #
+    #     # 8. Send a success response
+    #     return JsonResponse({'message': 'Webhook processed successfully.'}, status=200)
 
     def _verify_secret(self, secret_key, webhook_secret):
         """
