@@ -315,7 +315,7 @@ class GitHubWebhookView(CsrfExemptMixin, View):
 
         # Count published posts in the organization
         published_posts_count = Post.objects.filter(
-            organization=self.organization
+            organization=organization
         ).count()
         print(f"📝 Published posts count: {published_posts_count}")
 
