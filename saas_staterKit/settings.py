@@ -243,17 +243,17 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Define allowed methods and headers
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_HEADERS = [
-    "x-requested-with",
-    "content-type",
-    "accept",
-    "origin",
-    "authorization",
-    "accept-encoding",
-    "access-control-allow-origin",
-    "content-disposition",
-]
-
+# CORS_ALLOW_HEADERS = [
+#     "x-requested-with",
+#     "content-type",
+#     "accept",
+#     "origin",
+#     "authorization",
+#     "accept-encoding",
+#     "access-control-allow-origin",
+#     "content-disposition",
+# ]
+CORS_ALLOW_HEADERS = ["*"]
 # Set CSRF trusted origins securely
 CSRF_TRUSTED_ORIGINS = ["https://" + host for host in CORS_ALLOWED_ORIGINS if host]
 
