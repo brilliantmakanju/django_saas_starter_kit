@@ -817,12 +817,13 @@ class OrganizationDashboardView(APIView):
         # Count of scheduled posts in the last 7 days
         scheduled_posts_count = Post.objects.filter(
             organization=organization, status=Post.Status.SCHEDULED,
-            scheduled_publish_time__gte=last_7_days
+            scheduled_publish_time__gte=last_7_days, platform=Platform.LINKEDIN
         ).count()
 
         # Count of posts generated in the last 7 days
         generated_posts_count = Post.objects.filter(
-            organization=organization, created_at__gte=last_7_days
+            organization=organization, created_at__gte=last_7_days,
+            platform=Platform.LINKEDIN
         ).count()
 
         # Construct the response data
@@ -858,7 +859,8 @@ class UpcomingPosts(APIView):
         scheduled_posts = Post.objects.filter(
             organization=organization,
             is_deleted=False,
-            status="scheduled"
+            status="scheduled",
+            platform=Platform.LINKEDIN
         ).order_by('-created_at')[:5]
 
         # Serialize the posts
