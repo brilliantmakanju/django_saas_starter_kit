@@ -1,6 +1,7 @@
 import re
 from django.utils.timezone import now
 from django.db import connection
+from django.db import transaction
 
 import stripe
 import logging
@@ -801,51 +802,40 @@ class UserProfileUpdateView(APIView):
                 user.last_name = last_name
                 user.save(update_fields=["first_name", "last_name"])
 
-                if not UserOrganizationRole.objects.filter(user=user).exists():
-                    unique_identifier = str(uuid.uuid4())
-                    organization_name = f"{first_name[:3]}{unique_identifier[:4]}{last_name[-3:]}".lower()
+                # Optimize organization creation
+                with transaction.atomic():  # Ensures database integrity and speeds up execution
+                    if not UserOrganizationRole.objects.filter(user=user).exists():
+                        unique_identifier = uuid.uuid4().hex[:8]  # Shorter and faster
+                        organization_name = f"{first_name[:3]}{unique_identifier}{last_name[-3:]}".lower()
 
-                    organization = Organization.objects.create(
-                        owner=user,
-                        name=organization_name,
-                        schema_name=organization_name
-                    )
+                        # Create Organization
+                        organization = Organization.objects.create(
+                            owner=user,
+                            name=organization_name,
+                            schema_name=organization_name
+                        )
 
-                    domain_slug = slugify(organization_name)
-                    base_domain = get_base_domain()
-                    full_domain = f"{domain_slug}.{base_domain}"
+                        # Create Domain & UserOrganizationRole in Bulk
+                        base_domain = get_base_domain()
+                        full_domain = f"{slugify(organization_name)}.{base_domain}"
 
-                    Domain.objects.create(
-                        domain=full_domain,
-                        tenant=organization,
-                        is_primary=True
-                    )
+                        Domain.objects.bulk_create([
+                            Domain(domain=full_domain, tenant=organization, is_primary=True)
+                        ])
 
-                    UserOrganizationRole.objects.create(
-                        user=user,
-                        organization=organization,
-                        role='owner'
-                    )
+                        UserOrganizationRole.objects.create(
+                            user=user,
+                            organization=organization,
+                            role='owner'
+                        )
 
-            # Check profile image URL
-            profile = updated_data.get('profile')
-            if profile:
-                if not re.match(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+", profile):
-                    return Response({"detail": "Invalid Cloudinary URL."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Validate bio length
-            bio = updated_data.get('bio')
-            if bio and len(bio) > 500:
-                return Response({"detail": "Bio cannot exceed 500 characters."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Save other validated fields
+                # Save other validated fields
             for field, value in updated_data.items():
-                if field not in ["full_name", "first_name", "last_name"]:  # Already handled separately
+                if field not in ["full_name", "first_name", "last_name"]:
                     setattr(user, field, value)
 
             user.save()
 
-            # Return all requested fields in the response
             return Response({
                 'detail': 'Profile updated successfully.',
                 'user': UserProfileSerializer(user).data
@@ -855,6 +845,61 @@ class UserProfileUpdateView(APIView):
             'detail': 'Invalid data.',
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+        #         if not UserOrganizationRole.objects.filter(user=user).exists():
+        #             unique_identifier = str(uuid.uuid4())
+        #             organization_name = f"{first_name[:3]}{unique_identifier[:4]}{last_name[-3:]}".lower()
+        #
+        #             organization = Organization.objects.create(
+        #                 owner=user,
+        #                 name=organization_name,
+        #                 schema_name=organization_name
+        #             )
+        #
+        #             domain_slug = slugify(organization_name)
+        #             base_domain = get_base_domain()
+        #             full_domain = f"{domain_slug}.{base_domain}"
+        #
+        #             Domain.objects.create(
+        #                 domain=full_domain,
+        #                 tenant=organization,
+        #                 is_primary=True
+        #             )
+        #
+        #             UserOrganizationRole.objects.create(
+        #                 user=user,
+        #                 organization=organization,
+        #                 role='owner'
+        #             )
+        #
+        #     # Check profile image URL
+        #     profile = updated_data.get('profile')
+        #     if profile:
+        #         if not re.match(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+", profile):
+        #             return Response({"detail": "Invalid Cloudinary URL."}, status=status.HTTP_400_BAD_REQUEST)
+        #
+        #     # Validate bio length
+        #     bio = updated_data.get('bio')
+        #     if bio and len(bio) > 500:
+        #         return Response({"detail": "Bio cannot exceed 500 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        #
+        #     # Save other validated fields
+        #     for field, value in updated_data.items():
+        #         if field not in ["full_name", "first_name", "last_name"]:  # Already handled separately
+        #             setattr(user, field, value)
+        #
+        #     user.save()
+        #
+        #     # Return all requested fields in the response
+        #     return Response({
+        #         'detail': 'Profile updated successfully.',
+        #         'user': UserProfileSerializer(user).data
+        #     }, status=status.HTTP_200_OK)
+        #
+        # return Response({
+        #     'detail': 'Invalid data.',
+        #     'errors': serializer.errors
+        # }, status=status.HTTP_400_BAD_REQUEST)
 
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
