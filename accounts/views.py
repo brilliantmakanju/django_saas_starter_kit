@@ -28,6 +28,7 @@ from .permissions import TenantAccessPermission
 from drf_social_oauth2.views import AccessToken
 
 from dotenv import load_dotenv
+from django.http import StreamingHttpResponse
 
 from django.contrib.auth import get_user_model
 
@@ -36,7 +37,7 @@ from .serializers import UserProfileSerializer, CreateSubscriptionSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
-import os
+import os, time
 from accounts.utlis.utlis import is_organization_owner
 from .social_service import (twitter_initiate_oauth,
                              twitter_callback_oauth,
@@ -802,32 +803,41 @@ class UserProfileUpdateView(APIView):
                 user.last_name = last_name
                 user.save(update_fields=["first_name", "last_name"])
 
-                # Optimize organization creation
-                with transaction.atomic():  # Ensures database integrity and speeds up execution
-                    if not UserOrganizationRole.objects.filter(user=user).exists():
-                        unique_identifier = uuid.uuid4().hex[:8]  # Shorter and faster
-                        organization_name = f"{first_name[:3]}{unique_identifier}{last_name[-3:]}".lower()
+                # Send an immediate response
+                def stream_response():
+                    yield b'{"detail": "Profile update started..."}\n'  # First response to keep the connection alive
+                    time.sleep(1)  # Simulate a delay (Remove in production)
 
-                        # Create Organization
-                        organization = Organization.objects.create(
-                            owner=user,
-                            name=organization_name,
-                            schema_name=organization_name
-                        )
+                    with transaction.atomic():
+                        if not UserOrganizationRole.objects.filter(user=user).exists():
+                            unique_identifier = uuid.uuid4().hex[:8]
+                            organization_name = f"{first_name[:3]}{unique_identifier}{last_name[-3:]}".lower()
 
-                        # Create Domain & UserOrganizationRole in Bulk
-                        base_domain = get_base_domain()
-                        full_domain = f"{slugify(organization_name)}.{base_domain}"
+                            # Create Organization
+                            organization = Organization.objects.create(
+                                owner=user,
+                                name=organization_name,
+                                schema_name=organization_name
+                            )
 
-                        Domain.objects.bulk_create([
-                            Domain(domain=full_domain, tenant=organization, is_primary=True)
-                        ])
+                            base_domain = get_base_domain()
+                            full_domain = f"{slugify(organization_name)}.{base_domain}"
 
-                        UserOrganizationRole.objects.create(
-                            user=user,
-                            organization=organization,
-                            role='owner'
-                        )
+                            # Create Domain & UserOrganizationRole in Bulk
+                            Domain.objects.bulk_create([
+                                Domain(domain=full_domain, tenant=organization, is_primary=True)
+                            ])
+
+                            UserOrganizationRole.objects.create(
+                                user=user,
+                                organization=organization,
+                                role='owner'
+                            )
+
+                    yield b'{"detail": "Organization created successfully."}\n'
+                    yield b'{"detail": "Profile update completed."}\n'
+
+                return StreamingHttpResponse(stream_response(), content_type="application/json")
 
                 # Save other validated fields
             for field, value in updated_data.items():
