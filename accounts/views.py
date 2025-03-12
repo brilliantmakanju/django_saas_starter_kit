@@ -803,104 +803,49 @@ class UserProfileUpdateView(APIView):
                 user.last_name = last_name
                 user.save(update_fields=["first_name", "last_name"])
 
-                # Send an immediate response
-                def stream_response():
-                    yield b'{"detail": "Profile update started..."}\n'  # First response to keep the connection alive
-                    time.sleep(1)  # Simulate a delay (Remove in production)
-
-                    with transaction.atomic():
-                        if not UserOrganizationRole.objects.filter(user=user).exists():
-                            unique_identifier = uuid.uuid4().hex[:8]
-                            organization_name = f"{first_name[:3]}{unique_identifier}{last_name[-3:]}".lower()
-
-                            # Create Organization
-                            organization = Organization.objects.create(
-                                owner=user,
-                                name=organization_name,
-                                schema_name=organization_name
-                            )
-
-                            base_domain = get_base_domain()
-                            full_domain = f"{slugify(organization_name)}.{base_domain}"
-
-                            # Create Domain & UserOrganizationRole in Bulk
-                            Domain.objects.bulk_create([
-                                Domain(domain=full_domain, tenant=organization, is_primary=True)
-                            ])
-
-                            UserOrganizationRole.objects.create(
-                                user=user,
-                                organization=organization,
-                                role='owner'
-                            )
-
-                    yield b'{"detail": "Organization created successfully."}\n'
-                    yield b'{"detail": "Profile update completed."}\n'
-
-                return StreamingHttpResponse(stream_response(), content_type="application/json")
-
-                # Save other validated fields
-            for field, value in updated_data.items():
-                if field not in ["full_name", "first_name", "last_name"]:
-                    setattr(user, field, value)
-
-            user.save()
-
-            return Response({
-                'detail': 'Profile updated successfully.',
-                'user': UserProfileSerializer(user).data
-            }, status=status.HTTP_200_OK)
-
-        return Response({
-            'detail': 'Invalid data.',
-            'errors': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-        #         if not UserOrganizationRole.objects.filter(user=user).exists():
-        #             unique_identifier = str(uuid.uuid4())
-        #             organization_name = f"{first_name[:3]}{unique_identifier[:4]}{last_name[-3:]}".lower()
+        #         # Send an immediate response
+        #         def stream_response():
+        #             yield b'{"detail": "Profile update started..."}\n'  # First response to keep the connection alive
+        #             time.sleep(1)  # Simulate a delay (Remove in production)
         #
-        #             organization = Organization.objects.create(
-        #                 owner=user,
-        #                 name=organization_name,
-        #                 schema_name=organization_name
-        #             )
+        #             with transaction.atomic():
+        #                 if not UserOrganizationRole.objects.filter(user=user).exists():
+        #                     unique_identifier = uuid.uuid4().hex[:8]
+        #                     organization_name = f"{first_name[:3]}{unique_identifier}{last_name[-3:]}".lower()
         #
-        #             domain_slug = slugify(organization_name)
-        #             base_domain = get_base_domain()
-        #             full_domain = f"{domain_slug}.{base_domain}"
+        #                     # Create Organization
+        #                     organization = Organization.objects.create(
+        #                         owner=user,
+        #                         name=organization_name,
+        #                         schema_name=organization_name
+        #                     )
         #
-        #             Domain.objects.create(
-        #                 domain=full_domain,
-        #                 tenant=organization,
-        #                 is_primary=True
-        #             )
+        #                     base_domain = get_base_domain()
+        #                     full_domain = f"{slugify(organization_name)}.{base_domain}"
         #
-        #             UserOrganizationRole.objects.create(
-        #                 user=user,
-        #                 organization=organization,
-        #                 role='owner'
-        #             )
+        #                     # Create Domain & UserOrganizationRole in Bulk
+        #                     Domain.objects.bulk_create([
+        #                         Domain(domain=full_domain, tenant=organization, is_primary=True)
+        #                     ])
         #
-        #     # Check profile image URL
-        #     profile = updated_data.get('profile')
-        #     if profile:
-        #         if not re.match(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+", profile):
-        #             return Response({"detail": "Invalid Cloudinary URL."}, status=status.HTTP_400_BAD_REQUEST)
+        #                     UserOrganizationRole.objects.create(
+        #                         user=user,
+        #                         organization=organization,
+        #                         role='owner'
+        #                     )
         #
-        #     # Validate bio length
-        #     bio = updated_data.get('bio')
-        #     if bio and len(bio) > 500:
-        #         return Response({"detail": "Bio cannot exceed 500 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        #             yield b'{"detail": "Organization created successfully."}\n'
+        #             yield b'{"detail": "Profile update completed."}\n'
         #
-        #     # Save other validated fields
+        #         return StreamingHttpResponse(stream_response(), content_type="application/json")
+        #
+        #         # Save other validated fields
         #     for field, value in updated_data.items():
-        #         if field not in ["full_name", "first_name", "last_name"]:  # Already handled separately
+        #         if field not in ["full_name", "first_name", "last_name"]:
         #             setattr(user, field, value)
         #
         #     user.save()
         #
-        #     # Return all requested fields in the response
         #     return Response({
         #         'detail': 'Profile updated successfully.',
         #         'user': UserProfileSerializer(user).data
@@ -910,6 +855,61 @@ class UserProfileUpdateView(APIView):
         #     'detail': 'Invalid data.',
         #     'errors': serializer.errors
         # }, status=status.HTTP_400_BAD_REQUEST)
+
+                if not UserOrganizationRole.objects.filter(user=user).exists():
+                    unique_identifier = str(uuid.uuid4())
+                    organization_name = f"{first_name[:3]}{unique_identifier[:4]}{last_name[-3:]}".lower()
+
+                    organization = Organization.objects.create(
+                        owner=user,
+                        name=organization_name,
+                        schema_name=organization_name
+                    )
+
+                    domain_slug = slugify(organization_name)
+                    base_domain = get_base_domain()
+                    full_domain = f"{domain_slug}.{base_domain}"
+
+                    Domain.objects.create(
+                        domain=full_domain,
+                        tenant=organization,
+                        is_primary=True
+                    )
+
+                    UserOrganizationRole.objects.create(
+                        user=user,
+                        organization=organization,
+                        role='owner'
+                    )
+
+            # Check profile image URL
+            profile = updated_data.get('profile')
+            if profile:
+                if not re.match(r"https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_-]+\/image\/upload\/.+", profile):
+                    return Response({"detail": "Invalid Cloudinary URL."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate bio length
+            bio = updated_data.get('bio')
+            if bio and len(bio) > 500:
+                return Response({"detail": "Bio cannot exceed 500 characters."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Save other validated fields
+            for field, value in updated_data.items():
+                if field not in ["full_name", "first_name", "last_name"]:  # Already handled separately
+                    setattr(user, field, value)
+
+            user.save()
+
+            # Return all requested fields in the response
+            return Response({
+                'detail': 'Profile updated successfully.',
+                'user': UserProfileSerializer(user).data
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            'detail': 'Invalid data.',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
