@@ -342,7 +342,7 @@ class GitHubWebhookView(CsrfExemptMixin, View):
             }, status=403)
 
         secret_key = request.GET.get('secret_key', '')
-        print(f"🔑 Secret key received: {secret_key}")
+        print("🔑 Secret key received.")
 
         if not secret_key:
             print("❌ Missing secret key.")
