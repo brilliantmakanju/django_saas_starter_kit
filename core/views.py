@@ -837,36 +837,30 @@ class OrganizationDashboardView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-
 class UpcomingPosts(APIView):
     permission_classes = [permissions.IsAuthenticated, TenantAccessPermission]
 
     def get(self, request, *args, **kwargs):
         """
-        Retrieve all posts for the organization, grouped and ungrouped.
+        Retrieve all posts for the organization.
         """
         organization = getattr(request, 'organization', None)
 
         if not organization:
             return Response({'message': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Only the organization owner can add or update team members
         if not is_organization_owner(request.user, organization):
-            return Response({'message': 'You are not authorized to get post in this organization.'},
+            return Response({'message': 'You are not authorized to get posts in this organization.'},
                             status=status.HTTP_403_FORBIDDEN)
 
-            # Fetch posts and separate grouped/ungrouped
-
-        # Fetch only the first 5 scheduled posts
-        scheduled_posts = Post.objects.filter(
+        # Fetch all non-deleted, active posts (optionally scheduled or otherwise)
+        posts = Post.objects.filter(
             organization=organization,
             is_deleted=False,
             is_inactive=False,
-            status="scheduled",
-            platform=Platform.LINKEDIN
-        ).order_by('-created_at')[:5]
+            platform=Platform.LINKEDIN  # Optional: remove this line if you want posts from all platforms
+        ).order_by('-created_at')
 
-        # Serialize the posts
-        serialized_posts = PostSerializer(scheduled_posts, many=True).data
+        serialized_posts = PostSerializer(posts, many=True).data
 
         return Response(serialized_posts, status=status.HTTP_200_OK)

@@ -1,7 +1,6 @@
 import re
 from django.utils.timezone import now
 from django.db import connection
-from django.db import transaction
 
 import stripe
 import logging
@@ -28,8 +27,6 @@ from .permissions import TenantAccessPermission
 from drf_social_oauth2.views import AccessToken
 
 from dotenv import load_dotenv
-from django.http import StreamingHttpResponse
-
 from django.contrib.auth import get_user_model
 
 from .models import UserAccount, SubscriptionPlan, Payment
@@ -37,7 +34,7 @@ from .serializers import UserProfileSerializer, CreateSubscriptionSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
-import os, time
+import os
 from accounts.utlis.utlis import is_organization_owner
 from .social_service import (twitter_initiate_oauth,
                              twitter_callback_oauth,
@@ -54,6 +51,7 @@ from sesame.utils import get_user as sesame_get_user
 # Load environment variables
 from datetime import timedelta
 from rest_framework.throttling import AnonRateThrottle
+from .utlis.create_organization import create_organization_in_background
 load_dotenv()
 
 
@@ -911,6 +909,8 @@ class UserProfileUpdateView(APIView):
             'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+
+
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
 
@@ -1113,40 +1113,53 @@ class SendMagicLinkView(APIView):
 
     def post(self, request):
         email = request.data.get("email")
+        first_name = request.data.get("first_name", "").strip()
+        last_name = request.data.get("last_name", "").strip()
 
-        # Check if email is provided
         if not email:
             return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate the email format
         if not self.is_valid_email_format(email):
             return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # # Check if the email is from a disposable email provider
-        # if self.is_disposable_email(email):
-        #     return Response({"error": "Temporary email addresses are not allowed."}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
-            # Validate email and user existence
             user = User.objects.get(email=email)
             if not user.is_active:
-                return Response({"error": "This account is inactive. Please contact support."},
-                                status=status.HTTP_403_FORBIDDEN)
+                return Response(
+                    {"error": "This account is inactive. Please contact support."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         except User.DoesNotExist:
-            # Avoid exposing user existence
             user = None
 
         if user:
-            # If the user exists and is active, generate the magic link
-            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/{get_query_string(user)}"
+            magic_link = f"{settings.FRONTEND_DOMAIN}/{get_query_string(user)}"
             message = "Click the link to log in to your account."
-        else:
-            # If the user doesn't exist, create a new user and leave them inactive
-            user = User.objects.create(email=email, is_active=True)  # Or other signup logic
-            magic_link = f"{settings.FRONTEND_DOMAIN}/auth/{get_query_string(user)}"
+
+        elif first_name and last_name:
+            user = User.objects.create(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True
+            )
+
+            # ✅ Create organization for new user with name
+            create_organization_in_background(user, first_name, last_name)
+
+            magic_link = f"{settings.FRONTEND_DOMAIN}/{get_query_string(user)}"
             message = "Click the link to sign up and create your account."
 
-        # Send the magic link email
+
+
+        else:
+            # Do not create user if no name; just return success response
+            return Response(
+                {"message": "If this email is registered, a magic link will be sent."},
+                status=status.HTTP_200_OK
+            )
+
         email_result = send_email(
             subject="Your Magic Link for Authenticating",
             recipient_list=[email],
@@ -1155,22 +1168,18 @@ class SendMagicLinkView(APIView):
             plain_message="Click the link to Authenticate."
         )
 
-
-        # Handle email sending failure
         if not email_result.get("success"):
             return Response(
                 {"error": "Failed to send the magic link."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        return Response({"message": "If this email is registered, a magic link will be sent."},
-                        status=status.HTTP_200_OK)
-
+        return Response(
+            {"message": "If this email is registered, a magic link will be sent."},
+            status=status.HTTP_200_OK
+        )
 
     def is_valid_email_format(self, email):
-        """
-        Check if the email is in a valid format using regex.
-        """
         try:
             validate_email(email)
         except ValidationError:
