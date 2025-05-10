@@ -46,7 +46,7 @@ google-genai==1.4.0
 graphqlclient==0.2.4
 gunicorn==23.0.0
 h11==0.16.0
-httpcore==1.0.7
+httpcore==1.0.9
 httpx==0.28.1
 idna==3.10
 jiter==0.8.2
@@ -89,6 +89,7 @@ text-unidecode==1.3
 tqdm==4.67.1
 tweepy==4.9.0
 types-python-dateutil==2.9.0.20241206
+typing-inspection==0.4.0
 typing_extensions==4.12.2
 tzdata==2024.2
 tzlocal==5.3
