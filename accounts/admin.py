@@ -103,3 +103,4 @@ admin.site.register(Payment, PaymentAdmin)
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(SubscriptionPlan, SubscriptionPlanAdmin)
 
+
