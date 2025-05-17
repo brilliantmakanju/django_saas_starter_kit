@@ -1,6 +1,6 @@
 from organizations.models import UserOrganizationRole
 from django.core.exceptions import PermissionDenied
-import os, json
+import os
 from django.conf import settings
 from openai import OpenAI
 from django.shortcuts import get_object_or_404
@@ -224,8 +224,9 @@ def format_prompt(commits, tone):
     # Load the base prompt
     base_prompt = load_base_prompt()
 
+
     # Insert the commits and tone into the prompt
-    formatted_prompt = base_prompt.format(commits=commits, tone=tone)
+    formatted_prompt = base_prompt.format(commit=commits, tone=tone)
 
     return formatted_prompt
 
@@ -240,7 +241,7 @@ def generate_post_with_ai(commits, tone, secret_key):
         # Call the AI function to generate the post with streaming enabled
         print("Sending request to the AI...")
         completion = client.chat.completions.create(
-            model="meta/llama-3.3-70b-instruct",
+            model="meta-llama/Meta-Llama-3-70B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
             top_p=0.7,
@@ -455,39 +456,67 @@ def select_post_to_publish(posts_to_publish):
     return selected_post
 
 # Function to filter posts by platform and select based on priority
+# def select_linkedin_post_to_publish(posts_to_publish):
+#     # Step 1: Filter the posts by platform (e.g., 'LinkedIn')
+#     linkedIn_posts = [post for post in posts_to_publish if post.platform == 'linkedin']
+#
+#     if not linkedIn_posts:
+#         print("No posts available for LinkedIn.")
+#         return None
+#
+#     # Step 2: Separate posts into priority and non-priority
+#     priority_posts = [post for post in linkedIn_posts if post.priority]
+#     non_priority_posts = [post for post in linkedIn_posts if not post.priority]
+#
+#     # Step 3: Select the post based on priority
+#     # if priority_posts:
+#     #     # If there are priority posts, select the first one (you can also choose random here if needed)
+#     #     selected_post = priority_posts[0]
+#     #     print(f"Priority post selected: {selected_post.id}")
+#     #     return selected_post
+#     # else:
+#     #     # If no priority posts, select one randomly from non-priority posts
+#     #     selected_post = random.choice(non_priority_posts)
+#     #     print(f"Random post selected: {selected_post.id}")
+#     #     return selected_post
+#
+#         # Step 3: Select the post based on priority
+#     if priority_posts:
+#         selected_post = priority_posts[0]  # Pick the first priority post
+#         print(f"Priority post selected: {selected_post.id}")
+#
+#     if not priority_posts:
+#         selected_post = random.choice(non_priority_posts)
+#         print(f"Random post selected: {selected_post.id}")
+#
+#         # Step 4: Delete all other LinkedIn posts
+#     for post in linkedIn_posts:
+#         if post != selected_post:
+#             print(f"Deleting post: {post.id}")
+#             post.delete()
+#
+#     return selected_post
 def select_linkedin_post_to_publish(posts_to_publish):
-    # Step 1: Filter the posts by platform (e.g., 'LinkedIn')
+    # Step 1: Filter posts for LinkedIn
     linkedIn_posts = [post for post in posts_to_publish if post.platform == 'linkedin']
 
     if not linkedIn_posts:
         print("No posts available for LinkedIn.")
         return None
 
-    # Step 2: Separate posts into priority and non-priority
+    # Step 2: Separate priority and non-priority posts
     priority_posts = [post for post in linkedIn_posts if post.priority]
     non_priority_posts = [post for post in linkedIn_posts if not post.priority]
 
-    # Step 3: Select the post based on priority
-    # if priority_posts:
-    #     # If there are priority posts, select the first one (you can also choose random here if needed)
-    #     selected_post = priority_posts[0]
-    #     print(f"Priority post selected: {selected_post.id}")
-    #     return selected_post
-    # else:
-    #     # If no priority posts, select one randomly from non-priority posts
-    #     selected_post = random.choice(non_priority_posts)
-    #     print(f"Random post selected: {selected_post.id}")
-    #     return selected_post
-
-        # Step 3: Select the post based on priority
+    # Step 3: Select the appropriate post
     if priority_posts:
-        selected_post = priority_posts[0]  # Pick the first priority post
-        print(f"Priority post selected: {selected_post.id}")
+        selected_post = priority_posts[0]  # Always pick the first priority post
     else:
-        selected_post = random.choice(non_priority_posts)
-        print(f"Random post selected: {selected_post.id}")
+        selected_post = random.choice(non_priority_posts)  # Pick randomly from non-priority
 
-        # Step 4: Delete all other LinkedIn posts
+    print(f"Selected post: {selected_post.id}")
+
+    # Step 4: Delete all other LinkedIn posts except the selected one
     for post in linkedIn_posts:
         if post != selected_post:
             print(f"Deleting post: {post.id}")
