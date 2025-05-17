@@ -135,7 +135,7 @@ To achieve this, follow these steps:
 
 
 Here is the:
-Commit: {commits}
+Commit: {commit}
 Tone: {tone}
 
 
