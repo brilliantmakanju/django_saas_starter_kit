@@ -4,7 +4,6 @@ from .views import (
     RefreshTokenView,
     CustomTokenObtainPairView,
     LogoutView,
-    CreateSubscriptionAPIView,
     get_jwt_from_oauth,
     stripe_webhook,
     SocialCallBack, LinkedInSocialCallBack,
@@ -23,7 +22,7 @@ urlpatterns = [
     path('magic-link/confirm/', ConfirmMagicLinkView.as_view(), name='auth-confirm-magic-link'),
 
     # Subscription Endpoints
-    path('subscriptions/create/', CreateSubscriptionAPIView.as_view(), name='subscriptions-create'),
+    # path('subscriptions/create/', CreateSubscriptionAPIView.as_view(), name='subscriptions-create'),
 
     # Stripe Webhook
     path('webhooks/stripe/', stripe_webhook, name='stripe-webhook'),
