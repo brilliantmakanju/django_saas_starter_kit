@@ -18,7 +18,7 @@ from django.core.mail import send_mail
 from django.core.exceptions import PermissionDenied
 from rest_framework import status, permissions
 import logging
-from .utlis import is_organization_owner_or_admin
+from .utlis import is_organization_owner_or_admin, generate_post_with_ai
 from .utility.background_post_generator import create_post_in_background
 from datetime import datetime
 from rest_framework.response import Response
@@ -390,7 +390,7 @@ class GitHubWebhookView(CsrfExemptMixin, View):
             print("🤖 Generating AI post...")
             post_tone = organization.get_tone()
             print(post_tone)
-            create_post_in_background(commit_message, tone=post_tone, secret_key=webhook.private_secret)
+            generate_post_with_ai(commit_message, tone=post_tone, secret_key=webhook.private_secret)
             logger.info("✅ AI post generation complete.")
 
         logger.info("✅ Webhook processed successfully.")
