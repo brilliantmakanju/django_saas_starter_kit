@@ -386,7 +386,9 @@ class GitHubWebhookView(CsrfExemptMixin, View):
 
         if commit_message:
             logger.info("🤖 Generating AI post...")
+            print("🤖 Generating AI post...")
             post_tone = organization.get_tone()
+            print(post_tone)
             generate_post_with_ai(commit_message, tone=post_tone, secret_key=webhook.private_secret)
             logger.info("✅ AI post generation complete.")
 
