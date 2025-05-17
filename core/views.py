@@ -382,6 +382,7 @@ class GitHubWebhookView(CsrfExemptMixin, View):
 
         commit_message = payload.get('head_commit', {}).get('message', '')
         logger.debug(f"📝 Commit message: {commit_message}")
+        print(f"📝 Commit message: {commit_message}")
 
         if commit_message:
             logger.info("🤖 Generating AI post...")
