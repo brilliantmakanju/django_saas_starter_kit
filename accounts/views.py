@@ -1,6 +1,7 @@
 import re
 from django.utils.timezone import now
 from django.db import connection
+from accounts.utlis.check_user import has_pro_access
 
 import logging
 from django.http import JsonResponse
@@ -61,14 +62,12 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-
+import requests
 from paddle_billing.Entities.Notifications import NotificationEvent
 from paddle_billing.Notifications import Secret, Verifier
-
 from pathlib import Path
 
 from paddle_billing.Notifications.Requests import Headers
-
 
 class Request:
     def __init__(self, headers: Headers, body: bytes | str):
@@ -86,12 +85,14 @@ class Request:
         return Request(headers=headers, body=fixture_data)
 
 secret = os.getenv("PADDLE_WEBHOOK_SECRET")
+api_key = os.getenv("PADDLE_API_KEY")
+
 
 # Debug print to check if the API key is loaded
-if secret is None:
-    logger.info("WEBHOOK SECRET not found. Please check your environment variables.")
+if secret or api_key is None:
+    logger.info("WEBHOOK SECRET or API KEY not found. Please check your environment variables.")
 else:
-    logger.info("WEBHOOK SECRET loaded successfully.")
+    logger.info("WEBHOOK SECRET and API KEY loaded successfully.")
 
 @csrf_exempt
 @require_POST
@@ -251,7 +252,6 @@ def handle_customer_created(customer):
             user.save()
     except Exception as e:
         logger.error(f"Failed to create or update user from Paddle customer: {e}")
-
 
 def blacklist_existing_tokens(user):
     """
@@ -468,7 +468,6 @@ class RefreshTokenView(APIView):
 
 
 ### Social callback to add tokens for posting
-### Social callback to add tokens for posting
 class SocialCallBack(APIView):
     # permission_classes = [AllowAny]
     permission_classes = [IsAuthenticated, TenantAccessPermission]
@@ -549,11 +548,6 @@ class LinkedInSocialCallBack(APIView):
         return linkedin_callback_oauth(request, organization)
 
 
-
-
-
-
-
 class PaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -608,7 +602,6 @@ class PaymentView(APIView):
         )
 
         return Response({'message': 'Payment created successfully. Awaiting approval.'}, status=status.HTTP_201_CREATED)
-
 
 ### Magic Link VIEW ( Send and Confirm Links )
 class SendMagicLinkView(APIView):
@@ -770,3 +763,53 @@ class ConfirmMagicLinkView(APIView):
             "access": str(refresh.access_token),
         }, status=status.HTTP_200_OK)
 
+
+class CreateSubscriptionAPIViews(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        # User is on free plan, so return nothing (not an error)
+        if not has_pro_access(user):
+            logger.info("ℹ️ User on free plan; skipping portal session creation.")
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if not user.stripe_subscription_id:
+            return Response(
+                {"error": "Missing Paddle customer or subscription ID."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        paddle_url = f"https://sandbox-api.paddle.com/customers/{user.stripe_subscription_id}/portal-sessions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+
+        try:
+            response = requests.post(paddle_url, headers=headers)
+            response.raise_for_status()
+
+            portal_data = response.json().get("data", {})
+            portal_url = portal_data.get("urls", {}).get("general", {}).get("overview")
+
+            if not portal_url:
+                logger.error("No overview URL found in Paddle response.")
+                return Response(
+                    {"error": "Could not get the customer portal URL."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            return Response({"portal_url": portal_url}, status=status.HTTP_200_OK)
+
+        except requests.RequestException as e:
+            try:
+                error_detail = response.json()
+            except Exception:
+                error_detail = response.text
+            logger.error(f"Paddle customer portal error: {str(e)} | Detail: {error_detail}")
+            return Response(
+                {"error": "Could not create customer portal session.", "detail": error_detail},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

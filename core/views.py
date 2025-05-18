@@ -19,7 +19,6 @@ from django.core.exceptions import PermissionDenied
 from rest_framework import status, permissions
 import logging
 from .utlis import is_organization_owner_or_admin, generate_post_with_ai
-from .utility.background_post_generator import create_post_in_background
 from datetime import datetime
 from rest_framework.response import Response
 from accounts.permissions import TenantAccessPermission
