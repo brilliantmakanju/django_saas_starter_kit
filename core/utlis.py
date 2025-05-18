@@ -11,6 +11,9 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 client = OpenAI(
   base_url = settings.AI_BASE_URL,
@@ -213,7 +216,7 @@ def load_base_prompt():
     """
     Load the base prompt from the external file.
     """
-    prompt_file_path = os.path.join(os.path.dirname(__file__), 'ai_prompts', 'base_prompt.txt')
+    prompt_file_path = os.path.join(os.path.dirname(__file__), 'ai_prompts', 'base_prompt_v2.txt')
     with open(prompt_file_path, 'r') as file:
         return file.read()
 
@@ -234,12 +237,11 @@ def generate_post_with_ai(commits, tone, secret_key):
     """
     Generate a post using AI based on commits and tone.
     """
-    # Format the prompt before passing it to the AI
     prompt = format_prompt(commits, tone)
+    logger.info("🔁 Generating post with AI for secret_key=%s", secret_key)
 
     try:
-        # Call the AI function to generate the post with streaming enabled
-        print("Sending request to the AI...")
+        logger.debug("📨 Sending prompt to AI model...")
         completion = client.chat.completions.create(
             model="meta-llama/Meta-Llama-3-70B-Instruct-Turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -249,71 +251,63 @@ def generate_post_with_ai(commits, tone, secret_key):
             stream=True
         )
 
-        # Print the entire response object to check its structure
-        # print("AI response object:", completion)
-
-        # Iterate through each chunk in the stream response
-        generated_content = ""
+        generated_content = []
         for chunk in completion:
-            if chunk.choices[0].delta.content is not None:
-                content = chunk.choices[0].delta.content
-                # print(f"Chunk content: {content}")  # Print the content of the chunk
-                generated_content += content  # Append content to the final result
+            delta = chunk.choices[0].delta.content
+            if delta:
+                generated_content.append(delta)
 
-        # print("Final generated content:", generated_content)
+        final_content = ''.join(generated_content)
+        logger.debug("✅ AI response received (length=%d)", len(final_content))
 
-        # Format the posts
-        formatted_posts = format_ai_posts(generated_content)
-        # print(formatted_posts)
+        formatted_posts = format_ai_posts(final_content)
+        logger.debug("🧹 AI content formatted into structured posts")
 
-        # Create posts
         created_posts = create_posts_from_formatted_data(secret_key, formatted_posts)
-        # print(created_posts, "Created Posts")
+        logger.info("✅ Created %d posts for organization", len(created_posts[0]) if created_posts else 0)
 
-        # # Output the created posts for verification
-        # for post in created_posts:
-        #     print(f"Post ID: {post.id}, Platform: {post.platform}, Content: {post.content}")
-
-        # Return the final generated content
         return created_posts
 
     except Exception as e:
-        # Print any errors that occur during the AI request
-        # print(f"Error generating post: {e}")
+        logger.exception("❌ Failed to generate post with AI: %s", str(e))
         return None
 
 def format_ai_posts(ai_response):
     """
-    Process and format the AI-generated posts into structured format for Twitter and LinkedIn.
-    Removes unnecessary characters, and groups posts by platform (Twitter / LinkedIn).
+    Parse AI response wrapped in triple backticks and extract Twitter and LinkedIn posts.
     """
-    # Remove unnecessary ** (bold) formatting, or any unwanted characters like extra quotes
-    ai_response_cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", ai_response)  # Removing bold markers (**)
-    ai_response_cleaned = ai_response_cleaned.replace('"', '')  # Removing quotes
+    logger.debug("🔧 Formatting AI response...")
 
-    # Now, group the posts by platform (Twitter and LinkedIn)
-    # Split the response by platform headers (assumes "Twitter" and "LinkedIn" headers are there)
+    # Strip triple backticks ``` from start and end if present
+    ai_response = ai_response.strip()
+    if ai_response.startswith("```") and ai_response.endswith("```"):
+        ai_response = ai_response[3:-3].strip()
+
+    # Clean markdown and quotes
+    cleaned = re.sub(r"\*\*(.*?)\*\*", r"\1", ai_response).replace('"', '')
+
     twitter_posts = []
     linkedin_posts = []
 
-    # Split by `---` to separate Twitter from LinkedIn content
-    groups = ai_response_cleaned.split('---')
+    for group in cleaned.split('---'):
+        group = group.strip()
+        if group.startswith("Twitter"):
+            for line in group.splitlines():
+                match = re.match(r"Twitter\s*\d+:\s*(.+)", line.strip())
+                if match:
+                    twitter_posts.append(match.group(1))
+        elif group.startswith("LinkedIn"):
+            for line in group.splitlines():
+                match = re.match(r"LinkedIn\s*\d+:\s*(.+)", line.strip())
+                if match:
+                    linkedin_posts.append(match.group(1))
 
-    # Check if Twitter or LinkedIn posts are present and collect them
-    for group in groups:
-        if "Twitter" in group:
-            # Split into separate posts and remove extra spaces
-            twitter_posts = [post.strip() for post in group.split("\n") if post.strip()]
-        elif "LinkedIn" in group:
-            linkedin_posts = [post.strip() for post in group.split("\n") if post.strip()]
+    logger.debug("📦 Parsed %d Twitter posts and %d LinkedIn posts", len(twitter_posts), len(linkedin_posts))
 
-    # Prepare the final structured output
-    result = {
+    return {
         'twitter_posts': twitter_posts,
         'linkedin_posts': linkedin_posts
     }
-
-    return result
 
 def generate_webhook_details(organization):
     if not organization.can_generate_webhook():
