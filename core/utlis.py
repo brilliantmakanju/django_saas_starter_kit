@@ -238,8 +238,6 @@ def generate_post_with_ai(commits, tone, secret_key):
     Generate a post using AI based on commits and tone.
     """
     prompt = format_prompt(commits, tone)
-    logger.info("🔁 Generating post with AI for secret_key=%s", secret_key)
-
     try:
         logger.debug("📨 Sending prompt to AI model...")
         completion = client.chat.completions.create(
