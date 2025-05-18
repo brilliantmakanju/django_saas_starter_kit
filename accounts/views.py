@@ -48,26 +48,30 @@ from django.utils.text import slugify
 from accounts.utlis.utlis import send_email
 from sesame.utils import get_user as sesame_get_user
 
+import requests
+from paddle_billing.Entities.Notifications import NotificationEvent
+from paddle_billing.Notifications import Secret, Verifier
+from pathlib import Path
+from paddle_billing.Notifications.Requests import Headers
 # Load environment variables
 from datetime import timedelta
 from rest_framework.throttling import AnonRateThrottle
 from .utlis.create_organization import create_organization_in_background
 load_dotenv()
 
-
-# logging.basicConfig(level=logging.DEBUG)
-
-
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-import requests
-from paddle_billing.Entities.Notifications import NotificationEvent
-from paddle_billing.Notifications import Secret, Verifier
-from pathlib import Path
+secret = os.getenv("PADDLE_WEBHOOK_SECRET")
+api_key = os.getenv("PADDLE_API_KEY")
 
-from paddle_billing.Notifications.Requests import Headers
+
+# Debug print to check if the API key is loaded
+if secret or api_key is None:
+    logger.info("WEBHOOK SECRET or API KEY not found. Please check your environment variables.")
+else:
+    logger.info("WEBHOOK SECRET and API KEY loaded successfully.")
 
 class Request:
     def __init__(self, headers: Headers, body: bytes | str):
@@ -83,16 +87,6 @@ class Request:
             fixture_data = file.read().strip()
 
         return Request(headers=headers, body=fixture_data)
-
-secret = os.getenv("PADDLE_WEBHOOK_SECRET")
-api_key = os.getenv("PADDLE_API_KEY")
-
-
-# Debug print to check if the API key is loaded
-if secret or api_key is None:
-    logger.info("WEBHOOK SECRET or API KEY not found. Please check your environment variables.")
-else:
-    logger.info("WEBHOOK SECRET and API KEY loaded successfully.")
 
 @csrf_exempt
 @require_POST
