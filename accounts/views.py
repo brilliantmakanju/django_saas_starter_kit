@@ -68,7 +68,7 @@ api_key = os.getenv("PADDLE_API_KEY")
 
 
 # Debug print to check if the API key is loaded
-if secret or api_key is None:
+if secret is None or api_key is None:
     logger.info("WEBHOOK SECRET or API KEY not found. Please check your environment variables.")
 else:
     logger.info("WEBHOOK SECRET and API KEY loaded successfully.")
