@@ -65,6 +65,7 @@ User = get_user_model()
 
 secret = os.getenv("PADDLE_WEBHOOK_SECRET")
 api_key = os.getenv("PADDLE_API_KEY")
+portal_domain = os.getenv("PORTAL_DOMAIN")
 
 
 # Debug print to check if the API key is loaded
@@ -774,7 +775,7 @@ class CreateSubscriptionAPIViews(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        paddle_url = f"https://sandbox-api.paddle.com/customers/{user.stripe_subscription_id}/portal-sessions"
+        paddle_url = f"{portal_domain}/customers/{user.stripe_subscription_id}/portal-sessions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
