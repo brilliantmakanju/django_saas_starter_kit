@@ -26,6 +26,9 @@ urlpatterns = [
     # Core (Webhook and related functionality)
     path('api/v1/', include('core.urls')),  # Prefix all core URLs with api/v1/ for core app routes
 
+    # Waitlist
+    path('api/v1/waitlist/', include('waitlist.urls')),  # Prefix all waitlist URLs with api/v1/waitlist for waitlist app routes
+
     # Subscription and Stripe Webhooks
     # path('api/v1/subscriptions/', include('subscriptions.urls')),  # Subscription endpoints like creating, managing
     # path('api/v1/stripe/webhook/', include('subscriptions.urls')),  # Stripe webhook to handle subscriptions

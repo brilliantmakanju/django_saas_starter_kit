@@ -95,6 +95,7 @@ SHARED_APPS = [
     'accounts',
     'anymail',
     'organizations',
+    'waitlist'
 ]
 
 # **TENANT_APPS** is for apps that will be specific to each tenant.

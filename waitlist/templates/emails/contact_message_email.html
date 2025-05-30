@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Contact Form Submission - Commit Companion</title>
+    <style>
+        /* Reset styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        /* Base styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            color: #fed7aa;
+            font-size: 16px;
+            margin: 8px 0 0 0;
+        }
+
+        /* Content */
+        .content {
+            padding: 32px 24px;
+        }
+
+        .alert-box {
+            background-color: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #f59e0b;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .alert-text {
+            color: #92400e;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section h2 {
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        .field-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .field-value {
+            color: #1f2937;
+            font-size: 16px;
+            font-weight: 500;
+            background-color: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            word-wrap: break-word;
+        }
+
+        .message-content {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .stat {
+            flex: 1;
+            background-color: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            color: #f97316;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Action buttons */
+        .actions {
+            margin: 32px 0;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            margin: 0 8px;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #374151;
+            border: 2px solid #e5e7eb;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #f9fafb;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .footer p {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0 16px;
+            }
+            .content {
+                padding: 24px 16px;
+            }
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 24px 0;">
+        <div class="email-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="#1f2937" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1>New Contact Submission</h1>
+                <p>Someone wants to help shape the MVP</p>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Alert -->
+                <div class="alert-box">
+                    <div class="alert-icon"></div>
+                    <p class="alert-text">New indie hacker feedback incoming! This could be valuable MVP input.</p>
+                </div>
+
+                <!-- Contact Details -->
+                <div class="section">
+                    <h2>Contact Information</h2>
+                    <div class="field">
+                        <div class="field-label">Name</div>
+                        <div class="field-value">{{CONTACT_NAME}}</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Email</div>
+                        <div class="field-value">{{CONTACT_EMAIL}}</div>
+                    </div>
+                    <div class="field">
+                        <div class="field-label">Submitted</div>
+                        <div class="field-value">{{SUBMISSION_DATE}}</div>
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div class="section">
+                    <h2>Their Message</h2>
+                    <div class="message-content">{{CONTACT_MESSAGE}}</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Total Contacts</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Waitlist Size</div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="actions">
+                    <a href="mailto:{{CONTACT_EMAIL}}?subject=Re: Commit Companion MVP Feedback" class="btn">
+                        Reply to {{CONTACT_NAME}}
+                    </a>
+                    <a href="{{ADMIN_DASHBOARD_URL}}" class="btn btn-secondary">
+                        View Dashboard
+                    </a>
+                </div>
+
+                <!-- Context -->
+                <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-top: 24px;">
+                    <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                        <strong>Context:</strong> This person reached out through the "Help Shape the MVP" contact form.
+                        They're likely an indie hacker or developer interested in the project accountability concept.
+                        Their feedback could be valuable for prioritizing MVP features.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Commit Companion - Keep your projects alive</p>
+                <p style="margin-top: 8px; font-size: 12px;">
+                    This notification was sent because someone submitted the contact form on commitcompanion.jolexhive.com
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
